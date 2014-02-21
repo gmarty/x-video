@@ -4,8 +4,9 @@
   "author": "G. C. Marty",
   "dependencies": {},
   "devDependencies": {
-    "grunt-typescript": "~0.2.7",
-    "connect": "~2.13.0"
+    "connect": "~2.13.0",
+    "grunt-contrib-stylus": "~0.12.0",
+    "grunt-typescript": "~0.2.7"
   },
   "repository": {
     "type": "git",

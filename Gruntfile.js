@@ -21,12 +21,22 @@ module.exports = function(grunt) {
       }
     },
 
+    stylus: {
+      production: {
+        options: {
+          urlfunc: 'embedurl'
+        },
+        files: {
+          'dist/x-video.css': 'src/x-video.styl'
+        }
+      }
+    },
+
     // Recompile to JavaScript when a file changes.
     watch: {
       client: {
         files: [
-          'src/**/*.ts',
-          '!src/server/*.ts'
+          'src/*.ts'
         ],
         tasks: ['typescript:client'],
         options: {
@@ -37,7 +47,8 @@ module.exports = function(grunt) {
   });
 
   grunt.loadNpmTasks('grunt-typescript');
+  grunt.loadNpmTasks('grunt-contrib-stylus');
   //grunt.loadNpmTasks('grunt-contrib-watch');
 
-  grunt.registerTask('default', ['typescript']);
+  grunt.registerTask('default', ['typescript', 'stylus']);
 };

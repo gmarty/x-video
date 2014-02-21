@@ -696,6 +696,30 @@
           this.xtag.video.mozSrcObject = value;
         }
       }
+    },
+    methods: {
+      canPlayType: function(type) {
+        return this.xtag.video.canPlayType(type);
+      },
+      /*fastSeek: function(time) {
+       return this.xtag.video.fastSeek(time);
+       },*/
+      load: function() {
+        return this.xtag.video.load();
+      },
+      pause: function() {
+        return this.xtag.video.pause();
+      },
+      play: function() {
+        return this.xtag.video.play();
+      },
+      getVideoPlaybackQuality: function() {
+        return this.xtag.video.getVideoPlaybackQuality();
+      },
+      // @todo Check support for this attribute before adding to methods.
+      mozGetMetadata: function() {
+        return this.xtag.video.mozGetMetadata();
+      }
     }
   });
 })();

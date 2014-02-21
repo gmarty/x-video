@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+
+// A minimal server that supports bytes range.
+
+'use strict';
+
+
+var http = require('http');
+var connect = require('connect');
+var staticServerPort = 3000;
+
+/**
+ * Start the server.
+ */
+(function start() {
+  // Static asset server.
+  var app = connect()
+    .use(connect.static('./demo'));
+  http.createServer(app).listen(staticServerPort);
+
+  console.log('Server running at http://localhost:%d/', staticServerPort);
+})();

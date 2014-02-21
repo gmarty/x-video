@@ -1,0 +1,14 @@
+{
+  "name": "x-video",
+  "version": "0.0.1",
+  "author": "G. C. Marty",
+  "dependencies": {},
+  "devDependencies": {
+    "grunt-typescript": "~0.2.7",
+    "connect": "~2.13.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gmarty/x-video.git"
+  }
+}

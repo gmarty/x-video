@@ -32,6 +32,23 @@ module.exports = function(grunt) {
       }
     },
 
+    copy: {
+      main: {
+        files: [
+          {expand: true, flatten: true, src: ['dist/x-video.js'], dest: 'demo/js/', filter: 'isFile'},
+          {expand: true, flatten: true, src: ['dist/x-video.css'], dest: 'demo/css/', filter: 'isFile'}
+        ]
+      }
+    },
+
+    'gh-pages': {
+      options: {
+        base: 'demo',
+        push: false
+      },
+      src: ['**']
+    },
+
     // Recompile to JavaScript when a file changes.
     watch: {
       client: {
@@ -49,6 +66,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-contrib-stylus');
   //grunt.loadNpmTasks('grunt-contrib-watch');
+  grunt.loadNpmTasks('grunt-contrib-copy');
+  grunt.loadNpmTasks('grunt-gh-pages');
 
   grunt.registerTask('default', ['typescript', 'stylus']);
+  grunt.registerTask('deploy', ['default', 'copy', 'gh-pages']);
 };

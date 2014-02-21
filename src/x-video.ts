@@ -678,6 +678,16 @@
           this.xtag.video.volume = value;
         }
       },
+      // Extra feature methods
+      onchapterchange: {
+        get: function() {
+          return this.xtag.onchapterchangeListener;
+        },
+        set: function(event) {
+          this.xtag.onchapterchangeListener = event;
+          this.addEventListener('chapterchange', event, false);
+        }
+      },
       // @todo Check support for this attribute before adding to accessors.
       mozFrameBufferLength: {
         get: function() {

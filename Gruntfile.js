@@ -1,5 +1,3 @@
-/* jshint node: true */
-
 'use strict';
 
 module.exports = function(grunt) {
@@ -64,10 +62,10 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-contrib-stylus');
-  //grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-gh-pages');
+  //grunt.loadNpmTasks('grunt-contrib-watch');
 
-  grunt.registerTask('default', ['typescript', 'stylus']);
-  grunt.registerTask('deploy', ['default', 'copy', 'gh-pages']);
+  grunt.registerTask('build', ['typescript', 'stylus', 'copy']);
+  grunt.registerTask('deploy', ['build', 'gh-pages']);
 };

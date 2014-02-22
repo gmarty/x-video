@@ -1,4 +1,5 @@
 buttonWidth = 30px
+elementMargin = 4px
 
 x-video
   object-fit contain
@@ -71,8 +72,8 @@ x-video .media-controls-play-button
   width buttonWidth
   height 30px
   line-height 30px
-  margin-left 9px
-  margin-right 9px
+  margin-left elementMargin
+  margin-right elementMargin
   padding 0
   background-color initial
   color inherit
@@ -92,8 +93,8 @@ x-video .media-controls-rewind-button
   width buttonWidth
   height 30px
   line-height 30px
-  margin-left 9px
-  margin-right 9px
+  margin-left elementMargin
+  margin-right elementMargin
   padding 0
   background-color initial
   color inherit
@@ -113,8 +114,8 @@ x-video .media-controls-forward-button
   width buttonWidth
   height 30px
   line-height 30px
-  margin-left 9px
-  margin-right 9px
+  margin-left elementMargin
+  margin-right elementMargin
   padding 0
   background-color initial
   color inherit
@@ -128,7 +129,7 @@ x-video .media-controls-timeline
   display flex
   flex 1 1 auto
   height 8px
-  margin 0 15px 0 0
+  margin 0 elementMargin * 2 0 0
   padding 0
   background-color rgba(0, 0, 0, 0)
   min-width 25px
@@ -150,7 +151,7 @@ x-video .media-controls-current-time-display, x-video .media-controls-time-remai
   border-image-repeat initial
   cursor default
   height 30px
-  margin 0 9px 0 0
+  margin 0 elementMargin 0 0
   padding 0
   line-height 30px
   font-family Arial, Helvetica, sans-serif
@@ -176,10 +177,10 @@ x-video .media-controls-mute-button
   border-image-outset initial
   border-image-repeat initial
   box-sizing border-box
-  width 35px
+  width buttonWidth
   height 30px
   line-height 30px
-  margin 0 6px 0 0
+  margin 0 elementMargin 0 0
   padding 0
   background-color initial
   color inherit
@@ -194,7 +195,7 @@ x-video .media-controls-volume-slider
   flex 1 1.899999976158142 auto
   height 8px
   max-width 70px
-  margin 0 15px 0 0
+  margin 0 elementMargin * 2 0 0
   padding 0
   background-color rgba(0, 0, 0, 0)
   min-width 15px
@@ -215,8 +216,8 @@ x-video .media-controls-toggle-closed-captions-button
   width buttonWidth
   height 30px
   line-height 30px
-  margin-left -5px
-  margin-right 9px
+  margin-left - (elementMargin / 2)
+  margin-right elementMargin
   padding 0
   background-color initial
   color inherit
@@ -235,8 +236,8 @@ x-video .media-controls-fullscreen-button
   width buttonWidth
   height 30px
   line-height 30px
-  margin-left -5px
-  margin-right 9px
+  margin-left - (elementMargin / 2)
+  margin-right elementMargin
   padding 0
   background-color initial
   color inherit

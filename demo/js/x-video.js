@@ -394,12 +394,18 @@
             removed: function () {
                 // @todo Abort the XHR from parseWebVTT() if there is any.
             },
-            attributeChanged: function (attribute, prevValue, newValue) {
-                console.log(arguments);
-                switch (attribute) {
-                    case 'controls':
-                        this.controls = this.hasAttribute('controls');
-                        break;
+            attributeChanged: function (attribute, oldValue, newValue) {
+                if (attribute === 'controls') {
+                    this.controls = this.hasAttribute('controls');
+                    return;
+                }
+
+                if (videoAttributes.indexOf(attribute) > -1) {
+                    if (this.hasAttribute(attribute)) {
+                        this.xtag.video.setAttribute(attribute, newValue);
+                    } else {
+                        this.xtag.video.removeAttribute(attribute);
+                    }
                 }
             }
         },

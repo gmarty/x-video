@@ -392,6 +392,15 @@
             inserted: function () {
             },
             removed: function () {
+                // @todo Abort the XHR from parseWebVTT() if there is any.
+            },
+            attributeChanged: function (attribute, prevValue, newValue) {
+                console.log(arguments);
+                switch (attribute) {
+                    case 'controls':
+                        this.controls = this.hasAttribute('controls');
+                        break;
+                }
             }
         },
         // @todo Refactor to be less verbose and more DRY.
@@ -528,13 +537,12 @@
                     return this.xtag.controls;
                 },
                 set: function (value) {
-                    this.xtag.controls = !!value;
-                    if (!this.xtag.controls) {
-                        this.xtag.mediaControlsPanel.style.display = 'none';
-                        this.xtag.mediaControlsPanel.style.opacity = 0;
-                    } else {
+                    if (value) {
                         this.xtag.mediaControlsPanel.style.removeProperty('display');
                         this.xtag.mediaControlsPanel.style.opacity = 1;
+                    } else {
+                        this.xtag.mediaControlsPanel.style.display = 'none';
+                        this.xtag.mediaControlsPanel.style.opacity = 0;
                     }
                 }
             },

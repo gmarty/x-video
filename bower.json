@@ -1,0 +1,29 @@
+{
+  "name": "x-video",
+  "version": "0.0.0",
+  "homepage": "http://gmarty.github.io/x-video/",
+  "authors": [
+    "Guillaume Marty <edo999@gmail.com>"
+  ],
+  "description": "An enhanced video player for modern browsers with a consistent UI and extra features!",
+  "main": [
+    "dist/x-video.js",
+    "dist/x-video.css"
+  ],
+  "keywords": [
+    "video",
+    "web component",
+    "x-tag"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "x-tag-core": "~0.9.3"
+  }
+}

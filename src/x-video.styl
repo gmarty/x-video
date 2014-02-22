@@ -1,9 +1,12 @@
+buttonWidth = 30px
+
 x-video
   object-fit contain
 
 x-video video
   width inherit
   height inherit
+  top 0
 
 x-video .media-controls
   width inherit
@@ -24,13 +27,15 @@ x-video .media-controls-enclosure
   max-width 800px
   height 30px
   flex-shrink 0
-  bottom 0px
-  text-indent 0px
-  padding 0px
+  bottom 0
+  text-indent 0
+  padding 0
   box-sizing border-box
+  position absolute
+  left 0
 
 x-video .media-controls-enclosure
-  padding 0px 5px 5px
+  padding 0 5px 5px
   height 35px
   flex-shrink 0
 
@@ -63,12 +68,12 @@ x-video .media-controls-play-button
   border-image-outset initial
   border-image-repeat initial
   box-sizing border-box
-  width 30px
+  width buttonWidth
   height 30px
   line-height 30px
   margin-left 9px
   margin-right 9px
-  padding 0px
+  padding 0
   background-color initial
   color inherit
   background embedurl('svg/play.svg')
@@ -84,12 +89,12 @@ x-video .media-controls-rewind-button
   border-image-outset initial
   border-image-repeat initial
   box-sizing border-box
-  width 30px
+  width buttonWidth
   height 30px
   line-height 30px
   margin-left 9px
   margin-right 9px
-  padding 0px
+  padding 0
   background-color initial
   color inherit
   background embedurl('svg/rewind.svg')
@@ -105,12 +110,12 @@ x-video .media-controls-forward-button
   border-image-outset initial
   border-image-repeat initial
   box-sizing border-box
-  width 30px
+  width buttonWidth
   height 30px
   line-height 30px
   margin-left 9px
   margin-right 9px
-  padding 0px
+  padding 0
   background-color initial
   color inherit
   background embedurl('svg/forward.svg')
@@ -123,8 +128,8 @@ x-video .media-controls-timeline
   display flex
   flex 1 1 auto
   height 8px
-  margin 0px 15px 0px 0px
-  padding 0px
+  margin 0 15px 0 0
+  padding 0
   background-color rgba(0, 0, 0, 0)
   min-width 25px
   border initial
@@ -145,8 +150,8 @@ x-video .media-controls-current-time-display, x-video .media-controls-time-remai
   border-image-repeat initial
   cursor default
   height 30px
-  margin 0px 9px 0px 0px
-  padding 0px
+  margin 0 9px 0 0
+  padding 0
   line-height 30px
   font-family Arial, Helvetica, sans-serif
   font-size 13px
@@ -156,7 +161,7 @@ x-video .media-controls-current-time-display, x-video .media-controls-time-remai
   letter-spacing normal
   word-spacing normal
   text-transform none
-  text-indent 0px
+  text-indent 0
   text-shadow none
   text-decoration none
 
@@ -174,8 +179,8 @@ x-video .media-controls-mute-button
   width 35px
   height 30px
   line-height 30px
-  margin 0px 6px 0px 0px
-  padding 0px
+  margin 0 6px 0 0
+  padding 0
   background-color initial
   color inherit
   background embedurl('svg/audio.svg')
@@ -189,8 +194,8 @@ x-video .media-controls-volume-slider
   flex 1 1.899999976158142 auto
   height 8px
   max-width 70px
-  margin 0px 15px 0px 0px
-  padding 0px
+  margin 0 15px 0 0
+  padding 0
   background-color rgba(0, 0, 0, 0)
   min-width 15px
   border initial
@@ -207,12 +212,12 @@ x-video .media-controls-toggle-closed-captions-button
   border-image-outset initial
   border-image-repeat initial
   box-sizing border-box
-  width 30px
+  width buttonWidth
   height 30px
   line-height 30px
-  margin-left - 5px
+  margin-left -5px
   margin-right 9px
-  padding 0px
+  padding 0
   background-color initial
   color inherit
 
@@ -227,12 +232,12 @@ x-video .media-controls-fullscreen-button
   border-image-outset initial
   border-image-repeat initial
   box-sizing border-box
-  width 30px
+  width buttonWidth
   height 30px
   line-height 30px
-  margin-left - 5px
+  margin-left -5px
   margin-right 9px
-  padding 0px
+  padding 0
   background-color initial
   color inherit
   background embedurl('svg/fullscreen.svg')

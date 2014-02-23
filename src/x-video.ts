@@ -255,6 +255,28 @@
         // Show the media controls bar if the controls attribute is present.
         this.controls = this.hasAttribute('controls');
 
+        // Check if the inner video controls attribute changes.
+        var observer = new MutationObserver(function(mutations) {
+          mutations.forEach(function(mutation) {
+            console.log(mutation.attributeName, xVideo.xtag.video.hasAttribute('controls'), xVideo.hasAttribute('controls'), mutation);
+            switch (mutation.attributeName) {
+              case 'controls':
+                if (xVideo.hasAttribute('controls')) {
+                  setTimeout(function() {
+                    xVideo.removeAttribute('controls');
+                  }, 10);
+                } else {
+                  setTimeout(function() {
+                    xVideo.setAttribute('controls');
+                  }, 10);
+                }
+                xVideo.xtag.video.removeAttribute('controls');
+                break;
+            }
+          });
+        });
+        observer.observe(xVideo.xtag.video, {attributes: true, attributeFilter: ['controls']});
+
         // Attaching event listener to controls.
         this.xtag.playButton.addEventListener('click', function(event) {
           if (xVideo.xtag.video.paused) {

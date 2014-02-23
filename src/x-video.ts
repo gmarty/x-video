@@ -252,6 +252,9 @@
           this.xtag.mediaControlsPanel.style.opacity = 0;
         }
 
+        // Show the media controls bar if the controls attribute is present.
+        this.controls = this.hasAttribute('controls');
+
         // Attaching event listener to controls.
         this.xtag.playButton.addEventListener('click', function(event) {
           if (xVideo.xtag.video.paused) {

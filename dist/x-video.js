@@ -233,7 +233,6 @@
                 // Check if the inner video controls attribute changes.
                 var observer = new MutationObserver(function (mutations) {
                     mutations.forEach(function (mutation) {
-                        console.log(mutation.attributeName, xVideo.xtag.video.hasAttribute('controls'), xVideo.hasAttribute('controls'), mutation);
                         switch (mutation.attributeName) {
                             case 'controls':
                                 if (xVideo.hasAttribute('controls')) {
@@ -242,7 +241,7 @@
                                     }, 10);
                                 } else {
                                     setTimeout(function () {
-                                        xVideo.setAttribute('controls');
+                                        xVideo.setAttribute('controls', 'true');
                                     }, 10);
                                 }
                                 xVideo.xtag.video.removeAttribute('controls');
@@ -297,15 +296,25 @@
                     xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(xVideo.xtag.timeline.value);
                 }, false);
 
-                xVideo.xtag.video.muted = false;
+                // Update the muted state HTML attribute is present.
+                this.muted = this.hasAttribute('muted');
+
+                // Replicate the muted state and volume of the video on xVideo element.
+                this.xtag.video.addEventListener('volumechange', function (event) {
+                    if (xVideo.xtag.video.muted) {
+                        xtag.addClass(xVideo.xtag.muteButton, 'muted');
+                    } else {
+                        xtag.removeClass(xVideo.xtag.muteButton, 'muted');
+                    }
+                    xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
+                }, false);
 
                 this.xtag.muteButton.addEventListener('click', function (event) {
+                    xVideo.xtag.video.muted = !xVideo.xtag.video.muted;
                     if (xVideo.xtag.video.muted) {
-                        xVideo.xtag.video.muted = false;
-                        xtag.removeClass(this, 'muted');
+                        xtag.removeClass(xVideo.xtag.muteButton, 'muted');
                     } else {
-                        xVideo.xtag.video.muted = true;
-                        xtag.addClass(this, 'muted');
+                        xtag.addClass(xVideo.xtag.muteButton, 'muted');
                     }
                 }, false);
 

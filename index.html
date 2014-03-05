@@ -5,10 +5,22 @@
 <link href="css/x-video.css" rel="stylesheet">
 </head>
 <body>
-<x-video src="media/big-buck-bunny.webm" controls style="width: 480px; height: 180px;">
-  <track kind="chapters" src="vtt/chapters.vtt" srclang="en">
+<x-video style="width: 480px; height: 180px;">
+  <video src="media/big-buck-bunny.webm" controls>
+    <track kind="chapters" src="vtt/chapters.vtt" srclang="en" default>
+  </video>
+  <video src="media/barbapapa-2.webm"></video>
 </x-video>
-<script src="js/x-tag-core.min.js"></script>
+<!--<x-video src="media/big-buck-bunny.webm" controls style="width: 480px; height: 180px;">
+  <track kind="chapters" src="vtt/chapters.vtt" srclang="en" default>
+</x-video>-->
+<script src="bower_components/x-tag-core/dist/x-tag-core.min.js"></script>
 <script src="js/x-video.js"></script>
+<script>
+var xVideo = document.querySelector('x-video');
+xVideo.addEventListener('videochange', function() {
+  this.play();
+});
+</script>
 </body>
 </html>

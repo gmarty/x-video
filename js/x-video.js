@@ -2,6 +2,10 @@
 (function () {
     'use strict';
 
+    // As per the spec.
+    /** @const */ var defaultWidth = 300;
+    /** @const */ var defaultHeight = 150;
+
     // The list of attributes of the <video> tag to populate to the inner video element of x-video.
     // From http://www.w3.org/TR/html5/embedded-content-0.html#the-video-element
     var videoAttributes = [
@@ -48,16 +52,26 @@
         'waiting'
     ];
 
-    var template = xtag.createFragment('<div class="media-controls">' + '<video></video>' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s; -webkit-transition:opacity 0.3s; opacity:1;">' + '<input type="button" class="media-controls-rewind-button" style="display:none;">' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" style="display:none;">' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' + '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' + '</div>' + '</div>' + '</div>');
+    var template = xtag.createFragment('<div class="media-controls">' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s; -webkit-transition:opacity 0.3s; opacity:1;">' + '<input type="button" class="media-controls-rewind-button" style="display:none;">' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" style="display:none;">' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' + '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' + '</div>' + '</div>' + '</div>');
 
     /**
+    * Transform a time in second to a human readable format.
+    * Hours are only displayed if > 0:
+    *  * 0:15   (minutes + seconds)
+    *  * 0:0:15 (hours + minutes + seconds)
+    * Seconds are padded with leading 0.
+    *
     * @param {number} time
     * @returns {string}
     */
     function formatTimeDisplay(time) {
-        var minutes = Math.floor(time / 60);
-        var seconds = Math.floor(time - minutes);
+        var hours = Math.floor(time / 60 / 60);
+        var minutes = Math.floor((time - (hours * 60 * 60)) / 60);
+        var seconds = Math.floor(time - (hours * 60 * 60) - (minutes * 60));
 
+        if (hours > 0 && minutes > 0) {
+            return hours + ':' + minutes + ':' + padWithZero(seconds);
+        }
         return minutes + ':' + padWithZero(seconds);
 
         /**
@@ -140,7 +154,7 @@
             }
 
             // parse time string
-            var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*--?>\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
+            var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*-->\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
             if (m) {
                 start = (parseInt(m[1], 10) * 60 * 60) + (parseInt(m[2], 10) * 60) + (parseInt(m[3], 10)) + (parseInt(m[4], 10) / 1000);
                 end = (parseInt(m[5], 10) * 60 * 60) + (parseInt(m[6], 10) * 60) + (parseInt(m[7], 10)) + (parseInt(m[8], 10) / 1000);
@@ -182,12 +196,18 @@
             created: function () {
                 var xVideo = this;
                 var children = xtag.toArray(xVideo.children);
+                var currentVideo = 0;
+
+                // We hide the native player in Chrome because JavaScript is enabled, so we don't need it.
+                var styleTag = document.createElement('style');
+                styleTag.textContent = 'x-video video::-webkit-media-controls{display:none}';
+                xVideo.appendChild(styleTag);
 
                 this.appendChild(template.cloneNode(true));
 
                 // Set HTML elements.
-                this.xtag.video = this.querySelector('video');
                 this.xtag.mediaControls = this.querySelector('.media-controls'); // Target for fullscreen.
+                this.xtag.mediaControlsEnclosure = this.querySelector('.media-controls-enclosure');
                 this.xtag.mediaControlsPanel = this.querySelector('.media-controls-panel');
                 this.xtag.rewindButton = this.querySelector('.media-controls-rewind-button');
                 this.xtag.playButton = this.querySelector('.media-controls-play-button');
@@ -200,11 +220,46 @@
                 this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
                 this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
-                // Move x-video children elements to the inner video element.
-                children.forEach(function (child) {
-                    xVideo.removeChild(child);
-                    xVideo.xtag.video.appendChild(child);
+                // Are there many video elements?
+                var playlist = children.filter(function (child) {
+                    return child.tagName === 'VIDEO';
+                }).map(function (child, index) {
+                    var src = child.getAttribute('src');
+                    if (index > 0) {
+                        // We remove all the video, except the first one, but keep a reference to the src.
+                        xVideo.removeChild(child);
+                    }
+                    return src;
                 });
+
+                // Is there already an inner video element?
+                var tmpVideo = null;
+                children.some(function (child) {
+                    if (child.tagName === 'VIDEO') {
+                        tmpVideo = child;
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (tmpVideo) {
+                    // There is already an inner <video> tag.
+                    this.xtag.video = tmpVideo;
+
+                    // Copy HTML attributes of inner <video> tag on <x-video> tag.
+                    videoAttributes.forEach(function (attribute) {
+                        if (xVideo.xtag.video.hasAttribute(attribute)) {
+                            xVideo.setAttribute(attribute, xVideo.xtag.video.getAttribute(attribute));
+                        }
+                    });
+                    if (xVideo.xtag.video.hasAttribute('controls')) {
+                        xVideo.setAttribute('controls', xVideo.xtag.video.getAttribute('controls'));
+                        xVideo.xtag.video.removeAttribute('controls');
+                    }
+                } else {
+                    // No <video> tag in HTML, we create it.
+                    this.xtag.video = document.createElement('video');
+                }
 
                 // Copy HTML attributes of <x-video> tag on inner <video> tag.
                 videoAttributes.forEach(function (attribute) {
@@ -213,6 +268,19 @@
                     }
                 });
 
+                this.xtag.mediaControls.insertBefore(this.xtag.video, this.xtag.mediaControlsEnclosure);
+
+                // Move x-video children elements to the inner video element.
+                children.forEach(function (child) {
+                    if (child === xVideo.xtag.video || (child.tagName !== 'TRACK' && child.tagName !== 'SOURCE')) {
+                        return;
+                    }
+                    xVideo.xtag.video.appendChild(child);
+                });
+
+                // From there, we need to update `children` to be sure to refer to the inner video children.
+                children = xtag.toArray(this.xtag.video.children);
+
                 // Propagate HTML events of inner video element to x-video element.
                 videoEventTypes.forEach(function (eventType) {
                     xVideo.xtag.video.addEventListener(eventType, function (event) {
@@ -220,12 +288,47 @@
                     }, false);
                 });
 
-                // Show the media controls bar if the controls attribute is present.
-                this.xtag.controls = this.hasAttribute('controls');
-                if (!this.xtag.controls) {
-                    this.xtag.mediaControlsPanel.style.display = 'none';
-                    this.xtag.mediaControlsPanel.style.opacity = 0;
+                // At the end of the video, update the src to the next in the playlist, if any.
+                if (playlist.length > 1) {
+                    this.xtag.video.addEventListener('ended', function (event) {
+                        if (currentVideo < playlist.length) {
+                            currentVideo++;
+                            xVideo.xtag.video.src = playlist[currentVideo];
+                        }
+                        xtag.fireEvent(xVideo, 'videochange');
+                    }, false);
                 }
+
+                // @todo Create a non styled mode for this logic.
+                // @todo Update these values when the video changes.
+                if (this.style.width === '' && this.style.height === '') {
+                    this.style.width = defaultWidth + 'px';
+                    this.style.height = defaultHeight + 'px';
+                }
+
+                // Show the media controls bar if the controls attribute is present.
+                this.controls = this.hasAttribute('controls');
+
+                // Check if the inner video controls attribute changes.
+                var observer = new MutationObserver(function (mutations) {
+                    mutations.forEach(function (mutation) {
+                        switch (mutation.attributeName) {
+                            case 'controls':
+                                if (xVideo.hasAttribute('controls')) {
+                                    setTimeout(function () {
+                                        xVideo.removeAttribute('controls');
+                                    }, 10);
+                                } else {
+                                    setTimeout(function () {
+                                        xVideo.setAttribute('controls', 'true');
+                                    }, 10);
+                                }
+                                xVideo.xtag.video.removeAttribute('controls');
+                                break;
+                        }
+                    });
+                });
+                observer.observe(xVideo.xtag.video, { attributes: true, attributeFilter: ['controls'] });
 
                 // Attaching event listener to controls.
                 this.xtag.playButton.addEventListener('click', function (event) {
@@ -272,15 +375,25 @@
                     xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(xVideo.xtag.timeline.value);
                 }, false);
 
-                xVideo.xtag.video.muted = false;
+                // Update the muted state HTML attribute is present.
+                this.muted = this.hasAttribute('muted');
+
+                // Replicate the muted state and volume of the video on xVideo element.
+                this.xtag.video.addEventListener('volumechange', function (event) {
+                    if (xVideo.xtag.video.muted) {
+                        xtag.addClass(xVideo.xtag.muteButton, 'muted');
+                    } else {
+                        xtag.removeClass(xVideo.xtag.muteButton, 'muted');
+                    }
+                    xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
+                }, false);
 
                 this.xtag.muteButton.addEventListener('click', function (event) {
+                    xVideo.xtag.video.muted = !xVideo.xtag.video.muted;
                     if (xVideo.xtag.video.muted) {
-                        xVideo.xtag.video.muted = false;
-                        xtag.removeClass(this, 'muted');
+                        xtag.removeClass(xVideo.xtag.muteButton, 'muted');
                     } else {
-                        xVideo.xtag.video.muted = true;
-                        xtag.addClass(this, 'muted');
+                        xtag.addClass(xVideo.xtag.muteButton, 'muted');
                     }
                 }, false);
 
@@ -392,6 +505,21 @@
             inserted: function () {
             },
             removed: function () {
+                // @todo Abort the XHR from parseWebVTT() if there is any.
+            },
+            attributeChanged: function (attribute, oldValue, newValue) {
+                if (attribute === 'controls') {
+                    this.controls = this.hasAttribute('controls');
+                    return;
+                }
+
+                if (videoAttributes.indexOf(attribute) > -1) {
+                    if (this.hasAttribute(attribute)) {
+                        this.xtag.video.setAttribute(attribute, newValue);
+                    } else {
+                        this.xtag.video.removeAttribute(attribute);
+                    }
+                }
             }
         },
         // @todo Refactor to be less verbose and more DRY.
@@ -528,13 +656,12 @@
                     return this.xtag.controls;
                 },
                 set: function (value) {
-                    this.xtag.controls = !!value;
-                    if (!this.xtag.controls) {
-                        this.xtag.mediaControlsPanel.style.display = 'none';
-                        this.xtag.mediaControlsPanel.style.opacity = 0;
-                    } else {
+                    if (value) {
                         this.xtag.mediaControlsPanel.style.removeProperty('display');
                         this.xtag.mediaControlsPanel.style.opacity = 1;
+                    } else {
+                        this.xtag.mediaControlsPanel.style.display = 'none';
+                        this.xtag.mediaControlsPanel.style.opacity = 0;
                     }
                 }
             },

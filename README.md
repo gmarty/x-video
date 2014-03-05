@@ -21,6 +21,18 @@ Everything works like the original video element:
 * The video element methods (`canPlayType()`, `pause()`...).
 * The video element events (`play`, `pause`...).
 
+## Working in a no JavaScript environment
+
+If you want to make sure the player will work on browsers with no JavaScript support, just add a
+`<video>` tag with the needed attributes inside your `<x-video>`:
+```html
+<x-video>
+  <video src="video.webm" autoplay loop></video>
+</x-video>
+```
+
+`x-video` will run normally, but will fallback to the native player if JavaScript is not available.
+
 ## Extra features
 
 ### Chapter navigation

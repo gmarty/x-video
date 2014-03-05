@@ -55,7 +55,6 @@
   ];
 
   var template = xtag.createFragment('<div class="media-controls">' +
-    '<video></video>' +
     '<div class="media-controls-enclosure">' +
     '<div class="media-controls-panel" style="transition:opacity 0.3s; -webkit-transition:opacity 0.3s; opacity:1;">' +
     '<input type="button" class="media-controls-rewind-button" style="display:none;">' +
@@ -222,11 +221,16 @@
         var xVideo = this;
         var children = xtag.toArray(xVideo.children);
 
+        // We hide the native player in Chrome because JavaScript is enabled, so we don't need it.
+        var styleTag = document.createElement('style');
+        styleTag.textContent = 'x-video video::-webkit-media-controls{display:none}';
+        xVideo.appendChild(styleTag);
+
         this.appendChild(template.cloneNode(true));
 
         // Set HTML elements.
-        this.xtag.video = this.querySelector('video');
         this.xtag.mediaControls = this.querySelector('.media-controls'); // Target for fullscreen.
+        this.xtag.mediaControlsEnclosure = this.querySelector('.media-controls-enclosure');
         this.xtag.mediaControlsPanel = this.querySelector('.media-controls-panel');
         this.xtag.rewindButton = this.querySelector('.media-controls-rewind-button');
         this.xtag.playButton = this.querySelector('.media-controls-play-button');
@@ -239,11 +243,34 @@
         this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
         this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
-        // Move x-video children elements to the inner video element.
-        children.forEach(function(child) {
-          xVideo.removeChild(child);
-          xVideo.xtag.video.appendChild(child);
+        // Is there already an inner video element?
+        var tmpVideo = null;
+        children.some(function(child) {
+          if (child.tagName === 'VIDEO') {
+            tmpVideo = child;
+            return true;
+          }
+          return false;
         });
+
+        if (tmpVideo) {
+          // There is already an inner <video> tag.
+          this.xtag.video = tmpVideo;
+
+          // Copy HTML attributes of inner <video> tag on <x-video> tag.
+          videoAttributes.forEach(function(attribute) {
+            if (xVideo.xtag.video.hasAttribute(attribute)) {
+              xVideo.setAttribute(attribute, xVideo.xtag.video.getAttribute(attribute));
+            }
+          });
+          if (xVideo.xtag.video.hasAttribute('controls')) {
+            xVideo.setAttribute('controls', xVideo.xtag.video.getAttribute('controls'));
+            xVideo.xtag.video.removeAttribute('controls');
+          }
+        } else {
+          // No <video> tag in HTML, we create it.
+          this.xtag.video = document.createElement('video');
+        }
 
         // Copy HTML attributes of <x-video> tag on inner <video> tag.
         videoAttributes.forEach(function(attribute) {
@@ -252,19 +279,25 @@
           }
         });
 
+        this.xtag.mediaControls.insertBefore(this.xtag.video, this.xtag.mediaControlsEnclosure);
+
+        // Move x-video children elements to the inner video element.
+        children.forEach(function(child) {
+          if (child === xVideo.xtag.video) {
+            return;
+          }
+          xVideo.xtag.video.appendChild(child);
+        });
+
+        // From there, we need to update `children` to be sure to refer to the inner video children.
+        children = xtag.toArray(this.xtag.video.children);
+
         // Propagate HTML events of inner video element to x-video element.
         videoEventTypes.forEach(function(eventType) {
           xVideo.xtag.video.addEventListener(eventType, function(event) {
             xtag.fireEvent(xVideo, eventType);
           }, false);
         });
-
-        // Show the media controls bar if the controls attribute is present.
-        this.xtag.controls = this.hasAttribute('controls');
-        if (!this.xtag.controls) {
-          this.xtag.mediaControlsPanel.style.display = 'none';
-          this.xtag.mediaControlsPanel.style.opacity = 0;
-        }
 
         // Show the media controls bar if the controls attribute is present.
         this.controls = this.hasAttribute('controls');

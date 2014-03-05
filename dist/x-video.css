@@ -1,5 +1,5 @@
 x-video{object-fit:contain}
-x-video video{width:inherit;height:inherit;top:0}
+x-video media-controls video{width:inherit;height:inherit;top:0}
 x-video .media-controls{width:inherit;height:inherit;position:relative;direction:ltr;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}
 x-video .media-controls:-webkit-full-screen{width:100%;height:100%}
 x-video .media-controls-enclosure{width:100%;max-width:800px;height:30px;flex-shrink:0;bottom:0;text-indent:0;padding:0;box-sizing:border-box;position:absolute;left:0}

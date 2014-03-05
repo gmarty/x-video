@@ -220,6 +220,7 @@
       created: function() {
         var xVideo = this;
         var children = xtag.toArray(xVideo.children);
+        var currentVideo = 0; // The index of the current video in the playlist.
 
         // We hide the native player in Chrome because JavaScript is enabled, so we don't need it.
         var styleTag = document.createElement('style');
@@ -242,6 +243,20 @@
         this.xtag.volumeSlider = this.querySelector('.media-controls-volume-slider');
         this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
         this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
+
+        // Are there many video elements?
+        var playlist = children
+          .filter(function(child) {
+            return child.tagName === 'VIDEO';
+          })
+          .map(function(child, index) {
+            var src = child.getAttribute('src');
+            if (index > 0) {
+              // We remove all the video, except the first one, but keep a reference to the src.
+              xVideo.removeChild(child);
+            }
+            return src;
+          });
 
         // Is there already an inner video element?
         var tmpVideo = null;
@@ -299,6 +314,18 @@
             xtag.fireEvent(xVideo, eventType);
           }, false);
         });
+
+        // At the end of the video, update the src to the next in the playlist, if any.
+        if (playlist.length > 1) {
+
+          this.xtag.video.addEventListener('ended', function(event) {
+            if (currentVideo < playlist.length) {
+              currentVideo++;
+              xVideo.xtag.video.src = playlist[currentVideo];
+            }
+            xtag.fireEvent(xVideo, 'videochange');
+          }, false);
+        }
 
         // Show the media controls bar if the controls attribute is present.
         this.controls = this.hasAttribute('controls');

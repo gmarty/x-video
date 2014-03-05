@@ -50,3 +50,26 @@ At least one `<track>` tag must have a `kind='chapters'` attribute and a `src` p
 When one of these 2 buttons are clicked, the element fires a `chapterchange` event.
 
 Note: the web server must support the `Range` HTTP header to use this feature.
+
+### Playlist
+
+To play several videos successively, add multiple `<video>` tags inside a `<x-video>` container:
+```html
+<x-video controls autoplay>
+  <video src="video-1.webm"></video>
+  <video src="video-2.webm"></video>
+  <video src="video-3.webm"></video>
+</x-video>
+```
+
+The videos will be played one after another. Only the attributes of the first one will be preserved,
+the attributes from the subsequent elements will be ignored.
+
+A `videochange` event is fired when a new element from the playlist is loaded. By default, the new
+video is only loaded, but not played. To play it, add a `autoplay` attribute to `<x-video>` or
+listen to the `videochange` event to trigger the playback in JavaScript:
+```javascript
+xVideo.addEventListener('videochange', function() {
+  this.play();
+});
+```

@@ -299,13 +299,6 @@
                     }, false);
                 }
 
-                // @todo Create a non styled mode for this logic.
-                // @todo Update these values when the video changes.
-                if (this.style.width === '' && this.style.height === '') {
-                    this.style.width = defaultWidth + 'px';
-                    this.style.height = defaultHeight + 'px';
-                }
-
                 // Show the media controls bar if the controls attribute is present.
                 this.controls = this.hasAttribute('controls');
 

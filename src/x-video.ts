@@ -283,7 +283,8 @@
 
         // Move x-video children elements to the inner video element.
         children.forEach(function(child) {
-          if (child === xVideo.xtag.video) {
+          if (child === xVideo.xtag.video ||
+            (child.tagName !== 'TRACK' && child.tagName !== 'SOURCE')) {
             return;
           }
           xVideo.xtag.video.appendChild(child);

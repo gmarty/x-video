@@ -2,6 +2,10 @@
 (function () {
     'use strict';
 
+    // As per the spec.
+    /** @const */ var defaultWidth = 300;
+    /** @const */ var defaultHeight = 150;
+
     // The list of attributes of the <video> tag to populate to the inner video element of x-video.
     // From http://www.w3.org/TR/html5/embedded-content-0.html#the-video-element
     var videoAttributes = [
@@ -51,13 +55,23 @@
     var template = xtag.createFragment('<div class="media-controls">' + '<video></video>' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s; -webkit-transition:opacity 0.3s; opacity:1;">' + '<input type="button" class="media-controls-rewind-button" style="display:none;">' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" style="display:none;">' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' + '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' + '</div>' + '</div>' + '</div>');
 
     /**
+    * Transform a time in second to a human readable format.
+    * Hours are only displayed if > 0:
+    *  * 0:15   (minutes + seconds)
+    *  * 0:0:15 (hours + minutes + seconds)
+    * Seconds are padded with leading 0.
+    *
     * @param {number} time
     * @returns {string}
     */
     function formatTimeDisplay(time) {
-        var minutes = Math.floor(time / 60);
-        var seconds = Math.floor(time - minutes);
+        var hours = Math.floor(time / 60 / 60);
+        var minutes = Math.floor((time - (hours * 60 * 60)) / 60);
+        var seconds = Math.floor(time - (hours * 60 * 60) - (minutes * 60));
 
+        if (hours > 0 && minutes > 0) {
+            return hours + ':' + minutes + ':' + padWithZero(seconds);
+        }
         return minutes + ':' + padWithZero(seconds);
 
         /**
@@ -140,7 +154,7 @@
             }
 
             // parse time string
-            var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*--?>\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
+            var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*-->\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
             if (m) {
                 start = (parseInt(m[1], 10) * 60 * 60) + (parseInt(m[2], 10) * 60) + (parseInt(m[3], 10)) + (parseInt(m[4], 10) / 1000);
                 end = (parseInt(m[5], 10) * 60 * 60) + (parseInt(m[6], 10) * 60) + (parseInt(m[7], 10)) + (parseInt(m[8], 10) / 1000);

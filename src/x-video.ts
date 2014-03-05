@@ -3,6 +3,10 @@
 (function() {
   'use strict';
 
+  // As per the spec.
+  /** @const */ var defaultWidth = 300;
+  /** @const */ var defaultHeight = 150;
+
   // The list of attributes of the <video> tag to populate to the inner video element of x-video.
   // From http://www.w3.org/TR/html5/embedded-content-0.html#the-video-element
   var videoAttributes = [
@@ -70,13 +74,23 @@
   );
 
   /**
+   * Transform a time in second to a human readable format.
+   * Hours are only displayed if > 0:
+   *  * 0:15   (minutes + seconds)
+   *  * 0:0:15 (hours + minutes + seconds)
+   * Seconds are padded with leading 0.
+   *
    * @param {number} time
    * @returns {string}
    */
   function formatTimeDisplay(time: number): string {
-    var minutes = Math.floor(time / 60);
-    var seconds = Math.floor(time - minutes);
+    var hours = Math.floor(time / 60 / 60);
+    var minutes = Math.floor((time - (hours * 60 * 60)) / 60);
+    var seconds = Math.floor(time - (hours * 60 * 60) - (minutes * 60));
 
+    if (hours > 0 && minutes > 0) {
+      return hours + ':' + minutes + ':' + padWithZero(seconds);
+    }
     return minutes + ':' + padWithZero(seconds);
 
     /**
@@ -157,7 +171,7 @@
         continue;
       }
       // parse time string
-      var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*--?>\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
+      var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*-->\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
       if (m) {
         start = (parseInt(m[1], 10) * 60 * 60) +
           (parseInt(m[2], 10) * 60) +

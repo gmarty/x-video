@@ -40,12 +40,13 @@ If you want to make sure the player will work on browsers with no JavaScript sup
 If you add a chapter track to a video, buttons to navigate to the next/previous chapters are added:
 ```html
 <x-video src="video.webm">
-  <track kind="chapters" src="vtt/chapters.vtt" srclang="en">
+  <track kind="chapters" src="vtt/chapters.vtt" srclang="en" default>
 </x-video>
 ```
 
-At least one `<track>` tag must have a `kind='chapters'` attribute and a `src` pointing to a valid
-`vtt` file.
+At least one `<track>` tag must have a `kind="chapters"` attribute and a `src` pointing to a valid
+`vtt` file. In case of several `<track>` elements, the one with a `default` attribute will be picked
+up first, otherwise the first in the list will be used.
 
 When one of these 2 buttons are clicked, the element fires a `chapterchange` event.
 

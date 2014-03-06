@@ -405,14 +405,29 @@
                 this.xtag.volumeSlider.addEventListener('input', onVolumeChange, false);
                 this.xtag.volumeSlider.addEventListener('change', onVolumeChange, false);
 
-                // Look for chapter track.
-                var chapterTrack = children.filter(function (child) {
-                    return child.tagName === 'TRACK' && child.kind === 'chapters' && child.src !== '';
+                // Build a list of all valid track elements.
+                var chapterTracks = children.filter(function (child) {
+                    return child.tagName === 'TRACK' && child.kind === 'chapters' && child.hasAttribute('src') && child.getAttribute('src') !== '';
                 });
 
-                if (chapterTrack.length) {
+                // Then, select the track element with a default attribute...
+                var activeChapterTrack = null;
+                chapterTracks.some(function (chapterTrack) {
+                    if (chapterTrack.hasAttribute('default')) {
+                        activeChapterTrack = chapterTrack;
+                        return true;
+                    }
+                    return false;
+                });
+
+                // ... or just pick up the first one in the list.
+                if (activeChapterTrack === null && chapterTracks.length > 0) {
+                    activeChapterTrack = chapterTracks[0];
+                }
+
+                if (activeChapterTrack) {
                     // We're only considering the first one for now.
-                    loadWebVTTFile(chapterTrack[0].src, function (cues) {
+                    loadWebVTTFile(activeChapterTrack.src, function (cues) {
                         if (!cues.length) {
                             // We expect at least one element.
                             return;

@@ -428,76 +428,100 @@
                 }
 
                 if (activeChapterTrack) {
-                    // We're only considering the first one for now.
-                    loadWebVTTFile(activeChapterTrack.src, function (cues) {
-                        if (!cues.length) {
-                            // We expect at least one element.
+                    // We defer processing the WebVTT file in case the browser will do it.
+                    xVideo.xtag.video.addEventListener('durationchange', waitForCues, false);
+                }
+
+                /**
+                * Check if the active chapter track element already has cues loaded and parsed by the
+                * browser. If not, we do it ourselves.
+                */
+                function waitForCues() {
+                    if (activeChapterTrack.track.cues && activeChapterTrack.track.cues.length > 0) {
+                        // Let the browser do the hard work for us.
+                        var cues = xtag.toArray(activeChapterTrack.track.cues);
+                        processCues(cues);
+                    } else {
+                        loadWebVTTFile(activeChapterTrack.src, processCues);
+                    }
+
+                    // Once executed, we remove the event listener.
+                    xVideo.xtag.video.removeEventListener('durationchange', waitForCues, false);
+                }
+
+                /**
+                * Now that we have cues, we use them and show the chapter navigation buttons.
+                *
+                * @param {Array.<Object>} cues
+                */
+                function processCues(cues) {
+                    if (!cues.length) {
+                        // We expect at least one element.
+                        return;
+                    }
+
+                    xVideo.xtag.rewindButton.removeAttribute('style');
+                    xVideo.xtag.forwardButton.removeAttribute('style');
+
+                    // Listen to click on rewind button.
+                    xVideo.xtag.rewindButton.addEventListener('click', function (event) {
+                        var currentTime = xVideo.xtag.video.currentTime;
+                        var currentChapter = null;
+
+                        if (!xVideo.xtag.video.paused) {
+                            // If the video is playing, we substract 1 second to be able to jump to previous
+                            // chapter. Otherwise, it would jump at the beginning of the current one.
+                            currentTime = Math.max(0, currentTime - 1.000);
+                        }
+
+                        currentChapter = getCurrentChapter(cues, currentTime);
+
+                        if (currentChapter === null) {
                             return;
                         }
 
-                        xVideo.xtag.rewindButton.removeAttribute('style');
-                        xVideo.xtag.forwardButton.removeAttribute('style');
+                        // Update the video currentTime.
+                        xVideo.xtag.video.currentTime = cues[currentChapter].startTime;
+                        xVideo.xtag.video.play();
 
-                        // Listen to click on rewind button.
-                        xVideo.xtag.rewindButton.addEventListener('click', function (event) {
-                            var currentTime = xVideo.xtag.video.currentTime;
-                            var currentChapter = null;
+                        // Emit a chapterchange event.
+                        xtag.fireEvent(xVideo, 'chapterchange', {
+                            detail: { chapter: currentChapter }
+                        });
+                    }, false);
 
-                            if (!xVideo.xtag.video.paused) {
-                                // If the video is playing, we substract 1 second to be able to jump to previous
-                                // chapter. Otherwise, it would jump at the beginning of the current one.
-                                currentTime = Math.max(0, currentTime - 1.000);
-                            }
+                    // Listen to click on forwardButton button.
+                    xVideo.xtag.forwardButton.addEventListener('click', function (event) {
+                        var currentTime = xVideo.xtag.video.currentTime;
+                        var currentChapter = null;
+                        var targetTime = xVideo.xtag.video.duration;
+                        var targetChapter = 0;
 
-                            currentChapter = getCurrentChapter(cues, currentTime);
+                        currentChapter = getCurrentChapter(cues, currentTime);
 
-                            if (currentChapter === null) {
-                                return;
-                            }
+                        if (currentChapter === null) {
+                            return;
+                        }
 
-                            // Update the video currentTime.
-                            xVideo.xtag.video.currentTime = cues[currentChapter].startTime;
-                            xVideo.xtag.video.play();
+                        targetChapter = currentChapter + 1;
 
+                        if (cues[targetChapter]) {
                             // Emit a chapterchange event.
                             xtag.fireEvent(xVideo, 'chapterchange', {
-                                detail: { chapter: currentChapter }
+                                detail: { chapter: targetChapter }
                             });
-                        }, false);
 
-                        // Listen to click on forwardButton button.
-                        xVideo.xtag.forwardButton.addEventListener('click', function (event) {
-                            var currentTime = xVideo.xtag.video.currentTime;
-                            var currentChapter = null;
-                            var targetTime = xVideo.xtag.video.duration;
-                            var targetChapter = 0;
+                            targetTime = Math.min(targetTime, cues[targetChapter].startTime);
+                        }
 
-                            currentChapter = getCurrentChapter(cues, currentTime);
+                        // Update the video currentTime.
+                        xVideo.xtag.video.currentTime = targetTime;
 
-                            if (currentChapter === null) {
-                                return;
-                            }
-
-                            targetChapter = currentChapter + 1;
-
-                            if (cues[targetChapter]) {
-                                // Emit a chapterchange event.
-                                xtag.fireEvent(xVideo, 'chapterchange', {
-                                    detail: { chapter: targetChapter }
-                                });
-
-                                targetTime = Math.min(targetTime, cues[targetChapter].startTime);
-                            }
-
-                            // Update the video currentTime.
-                            xVideo.xtag.video.currentTime = targetTime;
-
-                            if (targetTime !== xVideo.xtag.video.duration) {
-                                // We resume playback if the cursor is not at the end of the video.
-                                xVideo.xtag.video.play();
-                            }
-                        }, false);
-                    });
+                        if (targetTime !== xVideo.xtag.video.duration) {
+                            // We resume playback if the cursor is not at the end of the video.
+                            xVideo.xtag.video.play();
+                        }
+                    }, false);
                 }
 
                 // Full screen button.

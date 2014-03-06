@@ -116,7 +116,7 @@
         var srt = '';
 
         // Check WEBVTT identifier.
-        if (data.substring(0, 6) != 'WEBVTT') {
+        if (data.substring(0, 6) !== 'WEBVTT') {
             console.error('Missing WEBVTT header: Not a WebVTT file - trying SRT.');
             srt = data;
         } else {
@@ -125,8 +125,8 @@
         }
 
         // clean up string a bit
-        srt = srt.replace(/\r+/g, ''); // remove dos newlines
-        srt = srt.replace(/^\s+|\s+$/g, ''); // trim white space start and end
+        srt = srt.replace(/\r+/g, ''); // remove DOS newlines
+        srt = srt.trim();
 
         //srt = srt.replace(/<[a-zA-Z\/][^>]*>/g, ''); // remove all html tags for security reasons
         // parse cues
@@ -134,10 +134,10 @@
         var cuelist = srt.split('\n\n');
         for (var i = 0; i < cuelist.length; i++) {
             var cue = cuelist[i];
-            var content = '';
-            var start = 0;
-            var end = 0;
             var id = '';
+            var startTime = 0;
+            var endTime = 0;
+            var text = '';
             var s = cue.split(/\n/);
             var t = 0;
 
@@ -156,17 +156,16 @@
             // parse time string
             var m = s[t].match(/(\d+):(\d+):(\d+)(?:.(\d+))?\s*-->\s*(\d+):(\d+):(\d+)(?:.(\d+))?/);
             if (m) {
-                start = (parseInt(m[1], 10) * 60 * 60) + (parseInt(m[2], 10) * 60) + (parseInt(m[3], 10)) + (parseInt(m[4], 10) / 1000);
-                end = (parseInt(m[5], 10) * 60 * 60) + (parseInt(m[6], 10) * 60) + (parseInt(m[7], 10)) + (parseInt(m[8], 10) / 1000);
+                startTime = (parseInt(m[1], 10) * 60 * 60) + (parseInt(m[2], 10) * 60) + (parseInt(m[3], 10)) + (parseInt(m[4], 10) / 1000);
+                endTime = (parseInt(m[5], 10) * 60 * 60) + (parseInt(m[6], 10) * 60) + (parseInt(m[7], 10)) + (parseInt(m[8], 10) / 1000);
             } else {
                 continue;
             }
 
             // concatenate text lines to html text
-            content = s.slice(t + 1).join('<br>');
+            text = s.slice(t + 1).join('<br>');
 
-            // add parsed cue
-            cues.push({ id: id, start: start, end: end, content: content });
+            cues.push({ id: id, startTime: startTime, endTime: endTime, text: text });
         }
 
         return cues;
@@ -183,8 +182,11 @@
         var currentChapter = null;
 
         cues.some(function (cue, chapter) {
-            currentChapter = chapter;
-            return cue.start <= currentTime && currentTime <= cue.end;
+            if (cue.startTime <= currentTime && currentTime <= cue.endTime) {
+                currentChapter = chapter;
+                return true;
+            }
+            return false;
         });
 
         return currentChapter;
@@ -454,7 +456,7 @@
                             }
 
                             // Update the video currentTime.
-                            xVideo.xtag.video.currentTime = cues[currentChapter].start;
+                            xVideo.xtag.video.currentTime = cues[currentChapter].startTime;
                             xVideo.xtag.video.play();
 
                             // Emit a chapterchange event.
@@ -484,7 +486,7 @@
                                     detail: { chapter: targetChapter }
                                 });
 
-                                targetTime = Math.min(targetTime, cues[targetChapter].start);
+                                targetTime = Math.min(targetTime, cues[targetChapter].startTime);
                             }
 
                             // Update the video currentTime.

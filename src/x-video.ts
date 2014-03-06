@@ -256,7 +256,14 @@
               xVideo.removeChild(child);
             }
             return src;
+          })
+          .filter(function(src, index) {
+            // We remove empty src.
+            return typeof src === 'string';
           });
+        if (xVideo.hasAttribute('src')) {
+          playlist = [xVideo.getAttribute('src')].concat(playlist);
+        }
 
         // Is there already an inner video element?
         var tmpVideo = null;
@@ -317,7 +324,6 @@
 
         // At the end of the video, update the src to the next in the playlist, if any.
         if (playlist.length > 1) {
-
           this.xtag.video.addEventListener('ended', function(event) {
             if (currentVideo < playlist.length) {
               currentVideo++;

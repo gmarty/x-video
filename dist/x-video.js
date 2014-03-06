@@ -230,7 +230,13 @@
                         xVideo.removeChild(child);
                     }
                     return src;
+                }).filter(function (src, index) {
+                    // We remove empty src.
+                    return typeof src === 'string';
                 });
+                if (xVideo.hasAttribute('src')) {
+                    playlist = [xVideo.getAttribute('src')].concat(playlist);
+                }
 
                 // Is there already an inner video element?
                 var tmpVideo = null;

@@ -237,34 +237,19 @@
     lifecycle: {
       created: function() {
         var xVideo = this;
-        var children = xtag.toArray(xVideo.children);
-        var currentVideo = 0; // The index of the current video in the playlist.
-        xVideo.preTimelinePausedStatus = false; // The paused state of the video before using timeline.
 
-        // We hide the native player in Chrome because JavaScript is enabled, so we don't need it.
+        // The initial list of DOM element children of <x-video> element.
+        var children = xtag.toArray(xVideo.children);
+
+        // First of all, we hide the native player in Chrome, not needed as JavaScript is enabled.
         var styleTag = document.createElement('style');
         styleTag.textContent = 'x-video video::-webkit-media-controls{display:none}';
         xVideo.appendChild(styleTag);
 
-        this.appendChild(template.cloneNode(true));
-
-        // Set HTML elements.
-        this.xtag.mediaControls = this.querySelector('.media-controls'); // Target for fullscreen.
-        this.xtag.mediaControlsEnclosure = this.querySelector('.media-controls-enclosure');
-        this.xtag.mediaControlsPanel = this.querySelector('.media-controls-panel');
-        this.xtag.rewindButton = this.querySelector('.media-controls-rewind-button');
-        this.xtag.playButton = this.querySelector('.media-controls-play-button');
-        this.xtag.forwardButton = this.querySelector('.media-controls-forward-button');
-        this.xtag.timeline = this.querySelector('.media-controls-timeline');
-        this.xtag.currentTimeDisplay = this.querySelector('.media-controls-current-time-display');
-        this.xtag.timeRemainingDisplay = this.querySelector('.media-controls-time-remaining-display');
-        this.xtag.muteButton = this.querySelector('.media-controls-mute-button');
-        this.xtag.volumeSlider = this.querySelector('.media-controls-volume-slider');
-        this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
-        this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
-
-        // Are there many video elements?
-        var playlist = children
+        // Setting some object's properties.
+        xVideo.currentVideo = 0; // The index of the current video in the playlist.
+        xVideo.preTimelinePausedStatus = false; // The paused state of the video before using timeline.
+        xVideo.playlist = children
           .filter(function(child) {
             return child.tagName === 'VIDEO';
           })
@@ -281,8 +266,26 @@
             return typeof src === 'string';
           });
         if (xVideo.hasAttribute('src')) {
-          playlist = [xVideo.getAttribute('src')].concat(playlist);
+          xVideo.playlist = [xVideo.getAttribute('src')].concat(xVideo.playlist);
         }
+
+        // Appending the internal elements.
+        this.appendChild(template.cloneNode(true));
+
+        // Set HTML elements.
+        this.xtag.mediaControls = this.querySelector('.media-controls'); // Target for fullscreen.
+        this.xtag.mediaControlsEnclosure = this.querySelector('.media-controls-enclosure');
+        this.xtag.mediaControlsPanel = this.querySelector('.media-controls-panel');
+        this.xtag.rewindButton = this.querySelector('.media-controls-rewind-button');
+        this.xtag.playButton = this.querySelector('.media-controls-play-button');
+        this.xtag.forwardButton = this.querySelector('.media-controls-forward-button');
+        this.xtag.timeline = this.querySelector('.media-controls-timeline');
+        this.xtag.currentTimeDisplay = this.querySelector('.media-controls-current-time-display');
+        this.xtag.timeRemainingDisplay = this.querySelector('.media-controls-time-remaining-display');
+        this.xtag.muteButton = this.querySelector('.media-controls-mute-button');
+        this.xtag.volumeSlider = this.querySelector('.media-controls-volume-slider');
+        this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
+        this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
         // Is there already an inner video element?
         var tmpVideo = null;
@@ -366,9 +369,9 @@
           },
           'ended': function(event) {
             // At the end of the video, update the src to the next in the playlist, if any.
-            if (playlist.length > 1 && currentVideo < playlist.length) {
-              currentVideo++;
-              xVideo.xtag.video.src = playlist[currentVideo];
+            if (xVideo.playlist.length > 1 && xVideo.currentVideo < xVideo.playlist.length) {
+              xVideo.currentVideo++;
+              xVideo.xtag.video.src = xVideo.playlist[xVideo.currentVideo];
             }
             xtag.fireEvent(xVideo, 'videochange');
           }
@@ -520,18 +523,23 @@
 
         currentChapter = getCurrentChapter(xVideo.cues, currentTime);
 
-        if (currentChapter === null) {
-          return;
+        if (currentTime === 0 && xVideo.playlist.length > 1 && xVideo.currentVideo > 0) {
+          // We play the previous video in the playlist.
+          xVideo.currentVideo--;
+          xVideo.xtag.video.src = xVideo.playlist[xVideo.currentVideo];
+          xVideo.xtag.video.play();
+
+          xtag.fireEvent(xVideo, 'videochange');
+        } else if (currentChapter !== null) {
+          // Jump to the previous chapter.
+          xVideo.xtag.video.currentTime = xVideo.cues[currentChapter].startTime;
+          xVideo.xtag.video.play();
+
+          // Emit a chapterchange event.
+          xtag.fireEvent(xVideo, 'chapterchange', {
+            detail: {chapter: currentChapter}
+          });
         }
-
-        // Update the video currentTime.
-        xVideo.xtag.video.currentTime = xVideo.cues[currentChapter].startTime;
-        xVideo.xtag.video.play();
-
-        // Emit a chapterchange event.
-        xtag.fireEvent(xVideo, 'chapterchange', {
-          detail: {chapter: currentChapter}
-        });
       },
 
       'click:delegate(input.media-controls-forward-button)': function(event) {

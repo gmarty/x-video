@@ -335,19 +335,16 @@
                             xtag.removeClass(xVideo.xtag.muteButton, 'muted');
                         }
                         xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
-                    }
-                });
-
-                // At the end of the video, update the src to the next in the playlist, if any.
-                if (playlist.length > 1) {
-                    this.xtag.video.addEventListener('ended', function (event) {
-                        if (currentVideo < playlist.length) {
+                    },
+                    'ended': function (event) {
+                        // At the end of the video, update the src to the next in the playlist, if any.
+                        if (playlist.length > 1 && currentVideo < playlist.length) {
                             currentVideo++;
                             xVideo.xtag.video.src = playlist[currentVideo];
                         }
                         xtag.fireEvent(xVideo, 'videochange');
-                    }, false);
-                }
+                    }
+                });
 
                 // Show the media controls bar if the controls attribute is present.
                 this.controls = this.hasAttribute('controls');

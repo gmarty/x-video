@@ -410,6 +410,12 @@
 
         xVideo.xtag.volumeSlider.value = 1;
 
+        // We show prev/next buttons on playlists.
+        if (xVideo.playlist.length > 1) {
+          xVideo.xtag.rewindButton.removeAttribute('style');
+          xVideo.xtag.forwardButton.removeAttribute('style');
+        }
+
         // *** Track elements & chapters management. ***
         xVideo.cues = null;
 
@@ -521,8 +527,6 @@
           currentTime = Math.max(0, currentTime - 1.000);
         }
 
-        currentChapter = getCurrentChapter(xVideo.cues, currentTime);
-
         if (currentTime === 0 && xVideo.playlist.length > 1 && xVideo.currentVideo > 0) {
           // We play the previous video in the playlist.
           xVideo.currentVideo--;
@@ -530,7 +534,18 @@
           xVideo.xtag.video.play();
 
           xtag.fireEvent(xVideo, 'videochange');
-        } else if (currentChapter !== null) {
+          return;
+        }
+
+        if (!xVideo.cues || !xVideo.cues.length) {
+          // No chapters? We go at the beginning of the video.
+          xVideo.xtag.video.currentTime = 0;
+          return;
+        }
+
+        currentChapter = getCurrentChapter(xVideo.cues, currentTime);
+
+        if (currentChapter !== null) {
           // Jump to the previous chapter.
           xVideo.xtag.video.currentTime = xVideo.cues[currentChapter].startTime;
           xVideo.xtag.video.play();
@@ -547,6 +562,12 @@
         var currentChapter: number = null;
         var targetTime = xVideo.xtag.video.duration;
         var targetChapter = 0;
+
+        if (!xVideo.cues || !xVideo.cues.length) {
+          // No chapters? We go straight to the end of the video.
+          xVideo.xtag.video.currentTime = targetTime;
+          return;
+        }
 
         currentChapter = getCurrentChapter(xVideo.cues, currentTime);
 

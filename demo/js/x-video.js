@@ -52,6 +52,22 @@
         'waiting'
     ];
 
+    var fullscreenEnabledPrefixes = [
+        'fullscreenEnabled',
+        'mozFullScreenEnabled',
+        'webkitFullscreenEnabled',
+        'msFullscreenEnabled',
+        'fullScreenEnabled'
+    ];
+
+    var requestFullscreenPrefixes = [
+        'requestFullscreen',
+        'msRequestFullscreen',
+        'mozRequestFullScreen',
+        'webkitRequestFullscreen',
+        'requestFullScreen'
+    ];
+
     var template = xtag.createFragment('<div class="media-controls">' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' + '<input type="button" class="media-controls-rewind-button" style="display:none;">' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" style="display:none;">' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' + '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' + '</div>' + '</div>' + '</div>');
 
     /**
@@ -429,11 +445,14 @@
                     xVideo.xtag.forwardButton.removeAttribute('style');
                 }
 
-                // Full screen button.
-                // @todo Dismiss controls on full screen mode.
-                if (document.fullScreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled || document.msFullscreenEnabled) {
-                    this.xtag.fullscreenButton.removeAttribute('style');
-                }
+                // Show the full screen button if the API is available.
+                fullscreenEnabledPrefixes.some(function (prefixedFullscreenEnabled) {
+                    if (document[prefixedFullscreenEnabled]) {
+                        xVideo.xtag.fullscreenButton.removeAttribute('style');
+                        return true;
+                    }
+                    return false;
+                });
             },
             inserted: function () {
             },
@@ -552,17 +571,12 @@
                 xVideo.xtag.video.volume = xVideo.xtag.volumeSlider.value;
             },
             'click:delegate(.media-controls-fullscreen-button)': function (event) {
-                var props = [
-                    'requestFullscreen',
-                    'msRequestFullscreen',
-                    'mozRequestFullScreen',
-                    'webkitRequestFullscreen'
-                ];
-
+                // @todo If already on fullscreen mode, click on the button should exit fullscreen.
+                // @todo Dismiss controls on full screen mode.
                 // @todo Cache the prefixed version and reuse it.
-                props.some(function (prop) {
-                    if (xVideo.xtag.mediaControls[prop]) {
-                        xVideo.xtag.mediaControls[prop]();
+                requestFullscreenPrefixes.some(function (prefixedRequestFullscreen) {
+                    if (xVideo.xtag.mediaControls[prefixedRequestFullscreen]) {
+                        xVideo.xtag.mediaControls[prefixedRequestFullscreen]();
                         return true;
                     }
                     return false;

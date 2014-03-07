@@ -208,6 +208,23 @@
         return currentChapter;
     }
 
+    /**
+    * Generate internal representation of video elements (src, chapters...).
+    *
+    * @param {string} id
+    * @param {string} src
+    * @returns {Object}
+    */
+    function videoSrcElement(id, src) {
+        if (typeof id === "undefined") { id = null; }
+        if (typeof src === "undefined") { src = ''; }
+        return {
+            id: id,
+            src: src,
+            chapterCues: null
+        };
+    }
+
     xtag.register('x-video', {
         prototype: Object.create(HTMLVideoElement.prototype),
         lifecycle: {
@@ -223,23 +240,24 @@
                 xVideo.appendChild(styleTag);
 
                 // Setting some object's properties.
-                xVideo.currentVideo = 0; // The index of the current video in the playlist.
+                xVideo.videoIndex = 0; // The index of the current video in the playlist.
                 xVideo.preTimelinePausedStatus = false; // The paused state of the video before using timeline.
                 xVideo.playlist = children.filter(function (child) {
                     return child.tagName === 'VIDEO';
                 }).map(function (child, index) {
+                    var id = child.getAttribute('id');
                     var src = child.getAttribute('src');
                     if (index > 0) {
                         // We remove all the video, except the first one, but keep a reference to the src.
                         xVideo.removeChild(child);
                     }
-                    return src;
-                }).filter(function (src, index) {
+                    return videoSrcElement(id, src);
+                }).filter(function (obj, index) {
                     // We remove empty src.
-                    return typeof src === 'string';
+                    return typeof obj.src === 'string';
                 });
                 if (xVideo.hasAttribute('src')) {
-                    xVideo.playlist = [xVideo.getAttribute('src')].concat(xVideo.playlist);
+                    xVideo.playlist = [videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'))].concat(xVideo.playlist);
                 }
 
                 // Appending the internal elements.
@@ -341,11 +359,11 @@
                     },
                     'ended': function (event) {
                         // At the end of the video, update the src to the next in the playlist, if any.
-                        if (xVideo.playlist.length > 1 && xVideo.currentVideo < xVideo.playlist.length) {
-                            xVideo.currentVideo++;
-                            xVideo.xtag.video.src = xVideo.playlist[xVideo.currentVideo];
+                        if (xVideo.playlist.length > 1 && xVideo.videoIndex < xVideo.playlist.length - 1) {
+                            xVideo.videoIndex++;
+                            xVideo.xtag.video.src = xVideo.playlist[xVideo.videoIndex].src;
+                            xtag.fireEvent(xVideo, 'videochange');
                         }
-                        xtag.fireEvent(xVideo, 'videochange');
                     }
                 });
 
@@ -388,9 +406,6 @@
                     xVideo.xtag.forwardButton.removeAttribute('style');
                 }
 
-                // *** Track elements & chapters management. ***
-                xVideo.cues = null;
-
                 // Build a list of all valid track elements.
                 var chapterTracks = children.filter(function (child) {
                     return child.tagName === 'TRACK' && child.kind === 'chapters' && child.hasAttribute('src') && child.getAttribute('src') !== '';
@@ -423,12 +438,12 @@
                 function waitForCues() {
                     if (activeChapterTrack.track.cues && activeChapterTrack.track.cues.length > 0) {
                         // Let the browser do the hard work for us.
-                        xVideo.cues = xtag.toArray(activeChapterTrack.track.cues);
-                        processCues(xVideo.cues);
+                        xVideo.playlist[xVideo.videoIndex].chapterCues = xtag.toArray(activeChapterTrack.track.cues);
+                        processCues(xVideo.playlist[xVideo.videoIndex].chapterCues);
                     } else {
                         loadWebVTTFile(activeChapterTrack.src, function (cues) {
-                            xVideo.cues = cues;
-                            processCues(xVideo.cues);
+                            xVideo.playlist[xVideo.videoIndex].chapterCues = cues;
+                            processCues(xVideo.playlist[xVideo.videoIndex].chapterCues);
                         });
                     }
 
@@ -498,27 +513,28 @@
                     currentTime = Math.max(0, currentTime - 1.000);
                 }
 
-                if (currentTime === 0 && xVideo.playlist.length > 1 && xVideo.currentVideo > 0) {
+                if (currentTime === 0 && xVideo.playlist.length > 1 && xVideo.videoIndex > 0) {
                     // We play the previous video in the playlist.
-                    xVideo.currentVideo--;
-                    xVideo.xtag.video.src = xVideo.playlist[xVideo.currentVideo];
+                    xVideo.videoIndex--;
+                    xVideo.xtag.video.src = xVideo.playlist[xVideo.videoIndex].src;
                     xVideo.xtag.video.play();
 
                     xtag.fireEvent(xVideo, 'videochange');
                     return;
                 }
 
-                if (!xVideo.cues || !xVideo.cues.length) {
+                if (!xVideo.playlist[xVideo.videoIndex].chapterCues || !xVideo.playlist[xVideo.videoIndex].chapterCues.length) {
                     // No chapters? We go at the beginning of the video.
                     xVideo.xtag.video.currentTime = 0;
+                    xVideo.xtag.video.play();
                     return;
                 }
 
-                currentChapter = getCurrentChapter(xVideo.cues, currentTime);
+                currentChapter = getCurrentChapter(xVideo.playlist[xVideo.videoIndex].chapterCues, currentTime);
 
                 if (currentChapter !== null) {
                     // Jump to the previous chapter.
-                    xVideo.xtag.video.currentTime = xVideo.cues[currentChapter].startTime;
+                    xVideo.xtag.video.currentTime = xVideo.playlist[xVideo.videoIndex].chapterCues[currentChapter].startTime;
                     xVideo.xtag.video.play();
 
                     // Emit a chapterchange event.
@@ -533,13 +549,13 @@
                 var targetTime = xVideo.xtag.video.duration;
                 var targetChapter = 0;
 
-                if (!xVideo.cues || !xVideo.cues.length) {
+                if (!xVideo.playlist[xVideo.videoIndex].chapterCues || !xVideo.playlist[xVideo.videoIndex].chapterCues.length) {
                     // No chapters? We go straight to the end of the video.
                     xVideo.xtag.video.currentTime = targetTime;
                     return;
                 }
 
-                currentChapter = getCurrentChapter(xVideo.cues, currentTime);
+                currentChapter = getCurrentChapter(xVideo.playlist[xVideo.videoIndex].chapterCues, currentTime);
 
                 if (currentChapter === null) {
                     return;
@@ -547,13 +563,13 @@
 
                 targetChapter = currentChapter + 1;
 
-                if (xVideo.cues[targetChapter]) {
+                if (xVideo.playlist[xVideo.videoIndex].chapterCues[targetChapter]) {
                     // Emit a chapterchange event.
                     xtag.fireEvent(xVideo, 'chapterchange', {
                         detail: { chapter: targetChapter }
                     });
 
-                    targetTime = Math.min(targetTime, xVideo.cues[targetChapter].startTime);
+                    targetTime = Math.min(targetTime, xVideo.playlist[xVideo.videoIndex].chapterCues[targetChapter].startTime);
                 }
 
                 // Update the video currentTime.
@@ -837,6 +853,7 @@
                     return this.xtag.video.src;
                 },
                 set: function (value) {
+                    xVideo.playlist[xVideo.videoIndex].src = value;
                     this.xtag.video.src = value;
                 }
             },

@@ -56,7 +56,7 @@
 
   var template = xtag.createFragment('<div class="media-controls">' +
     '<div class="media-controls-enclosure">' +
-    '<div class="media-controls-panel" style="transition:opacity 0.3s; -webkit-transition:opacity 0.3s; opacity:1;">' +
+    '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' +
     '<input type="button" class="media-controls-rewind-button" style="display:none;">' +
     '<input type="button" class="media-controls-play-button">' +
     '<input type="button" class="media-controls-forward-button" style="display:none;">' +
@@ -435,6 +435,9 @@
         this.xtag.volumeSlider.addEventListener('input', onVolumeChange, false);
         this.xtag.volumeSlider.addEventListener('change', onVolumeChange, false);
 
+        // *** Track elements & chapters management. ***
+        xVideo.cues = null;
+
         // Build a list of all valid track elements.
         var chapterTracks = children.filter(function(child) {
           return child.tagName === 'TRACK' && child.kind === 'chapters' &&
@@ -467,10 +470,13 @@
         function waitForCues() {
           if (activeChapterTrack.track.cues && activeChapterTrack.track.cues.length > 0) {
             // Let the browser do the hard work for us.
-            var cues = xtag.toArray(activeChapterTrack.track.cues);
-            processCues(cues);
+            xVideo.cues = xtag.toArray(activeChapterTrack.track.cues);
+            processCues(xVideo.cues);
           } else {
-            loadWebVTTFile(activeChapterTrack.src, processCues);
+            loadWebVTTFile(activeChapterTrack.src, function(cues) {
+              xVideo.cues = cues;
+              processCues(xVideo.cues);
+            });
           }
 
           // Once executed, we remove the event listener.
@@ -490,66 +496,6 @@
 
           xVideo.xtag.rewindButton.removeAttribute('style');
           xVideo.xtag.forwardButton.removeAttribute('style');
-
-          // Listen to click on rewind button.
-          xVideo.xtag.rewindButton.addEventListener('click', function(event) {
-            var currentTime = xVideo.xtag.video.currentTime;
-            var currentChapter: number = null;
-
-            if (!xVideo.xtag.video.paused) {
-              // If the video is playing, we substract 1 second to be able to jump to previous
-              // chapter. Otherwise, it would jump at the beginning of the current one.
-              currentTime = Math.max(0, currentTime - 1.000);
-            }
-
-            currentChapter = getCurrentChapter(cues, currentTime);
-
-            if (currentChapter === null) {
-              return;
-            }
-
-            // Update the video currentTime.
-            xVideo.xtag.video.currentTime = cues[currentChapter].startTime;
-            xVideo.xtag.video.play();
-
-            // Emit a chapterchange event.
-            xtag.fireEvent(xVideo, 'chapterchange', {
-              detail: {chapter: currentChapter}
-            });
-          }, false);
-
-          // Listen to click on forwardButton button.
-          xVideo.xtag.forwardButton.addEventListener('click', function(event) {
-            var currentTime = xVideo.xtag.video.currentTime;
-            var currentChapter: number = null;
-            var targetTime = xVideo.xtag.video.duration;
-            var targetChapter = 0;
-
-            currentChapter = getCurrentChapter(cues, currentTime);
-
-            if (currentChapter === null) {
-              return;
-            }
-
-            targetChapter = currentChapter + 1;
-
-            if (cues[targetChapter]) {
-              // Emit a chapterchange event.
-              xtag.fireEvent(xVideo, 'chapterchange', {
-                detail: {chapter: targetChapter}
-              });
-
-              targetTime = Math.min(targetTime, cues[targetChapter].startTime);
-            }
-
-            // Update the video currentTime.
-            xVideo.xtag.video.currentTime = targetTime;
-
-            if (targetTime !== xVideo.xtag.video.duration) {
-              // We resume playback if the cursor is not at the end of the video.
-              xVideo.xtag.video.play();
-            }
-          }, false);
         }
 
         // Full screen button.
@@ -589,6 +535,67 @@
           } else {
             this.xtag.video.removeAttribute(attribute);
           }
+        }
+      }
+    },
+    events: {
+      // Listen to click on rewind button.
+      'click:delegate(input.media-controls-rewind-button)': function(event) {
+        var currentTime = xVideo.xtag.video.currentTime;
+        var currentChapter: number = null;
+
+        if (!xVideo.xtag.video.paused) {
+          // If the video is playing, we substract 1 second to be able to jump to previous
+          // chapter. Otherwise, it would jump at the beginning of the current one.
+          currentTime = Math.max(0, currentTime - 1.000);
+        }
+
+        currentChapter = getCurrentChapter(xVideo.cues, currentTime);
+
+        if (currentChapter === null) {
+          return;
+        }
+
+        // Update the video currentTime.
+        xVideo.xtag.video.currentTime = xVideo.cues[currentChapter].startTime;
+        xVideo.xtag.video.play();
+
+        // Emit a chapterchange event.
+        xtag.fireEvent(xVideo, 'chapterchange', {
+          detail: {chapter: currentChapter}
+        });
+      },
+
+      // Listen to click on forward button.
+      'click:delegate(input.media-controls-forward-button)': function(event) {
+        var currentTime = xVideo.xtag.video.currentTime;
+        var currentChapter: number = null;
+        var targetTime = xVideo.xtag.video.duration;
+        var targetChapter = 0;
+
+        currentChapter = getCurrentChapter(xVideo.cues, currentTime);
+
+        if (currentChapter === null) {
+          return;
+        }
+
+        targetChapter = currentChapter + 1;
+
+        if (xVideo.cues[targetChapter]) {
+          // Emit a chapterchange event.
+          xtag.fireEvent(xVideo, 'chapterchange', {
+            detail: {chapter: targetChapter}
+          });
+
+          targetTime = Math.min(targetTime, xVideo.cues[targetChapter].startTime);
+        }
+
+        // Update the video currentTime.
+        xVideo.xtag.video.currentTime = targetTime;
+
+        if (targetTime !== xVideo.xtag.video.duration) {
+          // We resume playback if the cursor is not at the end of the video.
+          xVideo.xtag.video.play();
         }
       }
     },

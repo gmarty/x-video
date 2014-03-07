@@ -325,6 +325,31 @@
           }, false);
         });
 
+        // Listen to the inner video events to maintain the interface in sync with the video state.
+        xtag.addEvents(this.xtag.video, {
+          'play': function(event) {
+            xtag.addClass(xVideo.xtag.playButton, 'paused');
+          },
+          'pause': function(event) {
+            xtag.removeClass(xVideo.xtag.playButton, 'paused');
+          },
+          'durationchange': function(event) {
+            xVideo.xtag.timeline.setAttribute('max', xVideo.xtag.video.duration);
+          },
+          'timeupdate': function(event) {
+            xVideo.xtag.timeline.value = this.currentTime;
+            xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(this.currentTime);
+          },
+          'volumechange': function(event) {
+            if (xVideo.xtag.video.muted) {
+              xtag.addClass(xVideo.xtag.muteButton, 'muted');
+            } else {
+              xtag.removeClass(xVideo.xtag.muteButton, 'muted');
+            }
+            xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
+          }
+        });
+
         // At the end of the video, update the src to the next in the playlist, if any.
         if (playlist.length > 1) {
           this.xtag.video.addEventListener('ended', function(event) {
@@ -360,40 +385,12 @@
         });
         observer.observe(xVideo.xtag.video, {attributes: true, attributeFilter: ['controls']});
 
-        // Attaching event listener to controls.
-        this.xtag.video.addEventListener('play', function(event) {
-          xtag.addClass(xVideo.xtag.playButton, 'paused');
-        }, false);
-
-        this.xtag.video.addEventListener('pause', function(event) {
-          xtag.removeClass(xVideo.xtag.playButton, 'paused');
-        }, false);
-
-        this.xtag.video.addEventListener('durationchange', function(event) {
-          xVideo.xtag.timeline.setAttribute('max', xVideo.xtag.video.duration);
-        }, false);
-
+        // Reset the visual state of the timeline.
         xVideo.xtag.timeline.value = 0;
         xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(0);
 
-        // Update the timeline as the video is being played.
-        this.xtag.video.addEventListener('timeupdate', function(event) {
-          xVideo.xtag.timeline.value = this.currentTime;
-          xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(this.currentTime);
-        }, false);
-
         // Update the muted state HTML attribute is present.
         this.muted = this.hasAttribute('muted');
-
-        // Replicate the muted state and volume of the video on xVideo element.
-        this.xtag.video.addEventListener('volumechange', function(event) {
-          if (xVideo.xtag.video.muted) {
-            xtag.addClass(xVideo.xtag.muteButton, 'muted');
-          } else {
-            xtag.removeClass(xVideo.xtag.muteButton, 'muted');
-          }
-          xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
-        }, false);
 
         xVideo.xtag.volumeSlider.value = 1;
 
@@ -464,7 +461,8 @@
         // @todo Dismiss controls on full screen mode.
         if (document.fullScreenEnabled ||
           document.mozFullScreenEnabled ||
-          document.webkitFullscreenEnabled) {
+          document.webkitFullscreenEnabled ||
+          document.msFullscreenEnabled) {
           this.xtag.fullscreenButton.removeAttribute('style');
         }
       },
@@ -497,7 +495,6 @@
         }
       },
 
-      // Listen to click on rewind button.
       'click:delegate(input.media-controls-rewind-button)': function(event) {
         var currentTime = xVideo.xtag.video.currentTime;
         var currentChapter: number = null;
@@ -524,7 +521,6 @@
         });
       },
 
-      // Listen to click on forward button.
       'click:delegate(input.media-controls-forward-button)': function(event) {
         var currentTime = xVideo.xtag.video.currentTime;
         var currentChapter: number = null;

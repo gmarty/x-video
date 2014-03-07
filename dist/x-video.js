@@ -199,6 +199,7 @@
                 var xVideo = this;
                 var children = xtag.toArray(xVideo.children);
                 var currentVideo = 0;
+                xVideo.preTimelinePausedStatus = false; // The paused state of the video before using timeline.
 
                 // We hide the native player in Chrome because JavaScript is enabled, so we don't need it.
                 var styleTag = document.createElement('style');
@@ -332,14 +333,6 @@
                 observer.observe(xVideo.xtag.video, { attributes: true, attributeFilter: ['controls'] });
 
                 // Attaching event listener to controls.
-                this.xtag.playButton.addEventListener('click', function (event) {
-                    if (xVideo.xtag.video.paused) {
-                        xVideo.xtag.video.play();
-                    } else {
-                        xVideo.xtag.video.pause();
-                    }
-                }, false);
-
                 this.xtag.video.addEventListener('play', function (event) {
                     xtag.addClass(xVideo.xtag.playButton, 'paused');
                 }, false);
@@ -361,21 +354,6 @@
                     xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(this.currentTime);
                 }, false);
 
-                /**
-                * @todo Changing the timeline should work better:
-                * 1. Mousedown on element = save the initial paused value.
-                * 2. Pause the video.
-                * 3. Update the currentTime as the slider is moved.
-                * 4. When the mouse is released, set the initial paused value back.
-                */
-                // Update the playing position when the timeline changes.
-                this.xtag.timeline.addEventListener('change', function (event) {
-                    //var initialPaused = xVideo.xtag.video.paused;
-                    xVideo.xtag.video.paused = true;
-                    xVideo.xtag.video.currentTime = xVideo.xtag.timeline.value;
-                    xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(xVideo.xtag.timeline.value);
-                }, false);
-
                 // Update the muted state HTML attribute is present.
                 this.muted = this.hasAttribute('muted');
 
@@ -389,23 +367,7 @@
                     xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
                 }, false);
 
-                this.xtag.muteButton.addEventListener('click', function (event) {
-                    xVideo.xtag.video.muted = !xVideo.xtag.video.muted;
-                    if (xVideo.xtag.video.muted) {
-                        xtag.removeClass(xVideo.xtag.muteButton, 'muted');
-                    } else {
-                        xtag.addClass(xVideo.xtag.muteButton, 'muted');
-                    }
-                }, false);
-
                 xVideo.xtag.volumeSlider.value = 1;
-
-                function onVolumeChange(event) {
-                    xVideo.xtag.video.volume = xVideo.xtag.volumeSlider.value;
-                }
-
-                this.xtag.volumeSlider.addEventListener('input', onVolumeChange, false);
-                this.xtag.volumeSlider.addEventListener('change', onVolumeChange, false);
 
                 // *** Track elements & chapters management. ***
                 xVideo.cues = null;
@@ -474,18 +436,6 @@
                 // @todo Dismiss controls on full screen mode.
                 if (document.fullScreenEnabled || document.mozFullScreenEnabled || document.webkitFullscreenEnabled) {
                     this.xtag.fullscreenButton.removeAttribute('style');
-
-                    this.xtag.fullscreenButton.addEventListener('click', function (event) {
-                        if (xVideo.xtag.mediaControls.requestFullscreen) {
-                            xVideo.xtag.mediaControls.requestFullscreen();
-                        } else if (xVideo.xtag.mediaControls.msRequestFullscreen) {
-                            xVideo.xtag.mediaControls.msRequestFullscreen();
-                        } else if (xVideo.xtag.mediaControls.mozRequestFullScreen) {
-                            xVideo.xtag.mediaControls.mozRequestFullScreen();
-                        } else if (xVideo.xtag.mediaControls.webkitRequestFullscreen) {
-                            xVideo.xtag.mediaControls.webkitRequestFullscreen();
-                        }
-                    }, false);
                 }
             },
             inserted: function () {
@@ -509,6 +459,13 @@
             }
         },
         events: {
+            'click:delegate(.media-controls-play-button)': function (event) {
+                if (xVideo.xtag.video.paused) {
+                    xVideo.xtag.video.play();
+                } else {
+                    xVideo.xtag.video.pause();
+                }
+            },
             // Listen to click on rewind button.
             'click:delegate(input.media-controls-rewind-button)': function (event) {
                 var currentTime = xVideo.xtag.video.currentTime;
@@ -566,6 +523,55 @@
                     // We resume playback if the cursor is not at the end of the video.
                     xVideo.xtag.video.play();
                 }
+            },
+            /**
+            * How is the timeline working?
+            * 1. Mousedown on element = save the initial paused value and pause the video.
+            * 2. Update the currentTime as the slider is moved.
+            * 3. When the mouse is released, set the initial paused value back.
+            * @todo Test on touch devices and fix accordingly.
+            */
+            'mousedown:delegate(input.media-controls-timeline)': function (event) {
+                xVideo.preTimelinePausedStatus = xVideo.xtag.video.paused;
+                xVideo.xtag.video.pause();
+                xVideo.timelineMoving = true;
+            },
+            'mousemove:delegate(input.media-controls-timeline)': function (event) {
+                if (!xVideo.timelineMoving) {
+                    return;
+                }
+                xVideo.xtag.video.paused = true;
+                xVideo.xtag.video.currentTime = xVideo.xtag.timeline.value;
+                //xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(xVideo.xtag.timeline.value);
+            },
+            'mouseup:delegate(input.media-controls-timeline)': function (event) {
+                xVideo.timelineMoving = false;
+                if (!xVideo.preTimelinePausedStatus) {
+                    xVideo.xtag.video.play();
+                }
+            },
+            'click:delegate(input.media-controls-mute-button)': function (event) {
+                xVideo.xtag.video.muted = !xVideo.xtag.video.muted;
+            },
+            'input:delegate(.media-controls-volume-slider)': function (event) {
+                xVideo.xtag.video.volume = xVideo.xtag.volumeSlider.value;
+            },
+            'click:delegate(.media-controls-fullscreen-button)': function (event) {
+                var props = [
+                    'requestFullscreen',
+                    'msRequestFullscreen',
+                    'mozRequestFullScreen',
+                    'webkitRequestFullscreen'
+                ];
+
+                // @todo Cache the prefixed version and reuse it.
+                props.some(function (prop) {
+                    if (xVideo.xtag.mediaControls[prop]) {
+                        xVideo.xtag.mediaControls[prop]();
+                        return true;
+                    }
+                    return false;
+                });
             }
         },
         // @todo Refactor to be less verbose and more DRY.
@@ -829,6 +835,7 @@
                     return this.xtag.onchapterchangeListener;
                 },
                 set: function (event) {
+                    // @todo Remove event listener for this.xtag.onchapterchangeListener if previously set.
                     this.xtag.onchapterchangeListener = event;
                     this.addEventListener('chapterchange', event, false);
                 }

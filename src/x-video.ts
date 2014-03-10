@@ -309,7 +309,7 @@
         }
       });
       if (videos[0].hasAttribute('controls')) {
-        attributes['controls'] = '';
+        xVideo.setAttribute('controls', '');
       }
     }
 
@@ -323,6 +323,7 @@
 
     // Create the inner video element.
     var innerVideo = document.createElement('video');
+    xVideo.xtag.video = innerVideo;
 
     // We replicate the attribute on both <x-video> and the inner video elements.
     for (var attr in attributes) {
@@ -364,7 +365,6 @@
       });
     });
 
-    xVideo.xtag.video = innerVideo;
     xVideo.xtag.mediaControls.appendChild(innerVideo);
     //xVideo.xtag.mediaControls.insertBefore(xVideo.xtag.video, xVideo.xtag.mediaControlsEnclosure);
 

@@ -351,8 +351,8 @@
         return {
             id: id,
             src: src,
-            trackRange: null,
-            chapterCues: null
+            trackRange: [],
+            chapterCues: []
         };
     }
 

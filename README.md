@@ -44,9 +44,8 @@ If you add a chapter track to a video, buttons to navigate to the next/previous 
 </x-video>
 ```
 
-At least one `<track>` tag must have a `kind="chapters"` attribute and a `src` pointing to a valid
-`vtt` file. In case of several `<track>` elements, the one with a `default` attribute will be picked
-up first, otherwise the first in the list will be used.
+At least one `<track>` tag must have a `kind="chapters"` and `default` attributes with a `src`
+pointing to a valid `vtt` file.
 
 When one of these 2 buttons are clicked, the element fires a `chapterchange` event.
 

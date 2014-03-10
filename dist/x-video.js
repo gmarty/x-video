@@ -3,12 +3,12 @@
     'use strict';
 
     // As per the spec.
-    /** @const */ var defaultWidth = 300;
-    /** @const */ var defaultHeight = 150;
+    /** @const */ var DEFAULT_WIDTH = 300;
+    /** @const */ var DEFAULT_HEIGHT = 150;
 
     // The list of attributes of the <video> tag to populate to the inner video element of x-video.
     // From http://www.w3.org/TR/html5/embedded-content-0.html#the-video-element
-    var videoAttributes = [
+    var VIDEO_ATTRIBUTES = [
         'src',
         'crossorigin',
         'poster',
@@ -22,7 +22,7 @@
     ];
 
     // From https://developer.mozilla.org/en-US/docs/Web/Guide/Events/Media_events
-    var videoEventTypes = [
+    var VIDEO_EVENT_TYPES = [
         'abort',
         'canplay',
         'canplaythrough',
@@ -209,6 +209,136 @@
     }
 
     /**
+    * Return an array of numbers starting at `start` and made of `count` elements.
+    *
+    * @param {number} start
+    * @param {number} count
+    * @returns {Array.<number>}
+    */
+    function range(start, count) {
+        return Array.apply(0, Array(count)).map(function (element, index) {
+            return index + start;
+        });
+    }
+
+    /**
+    * Initialize the x-video element by gathering existing DOM elements and attributes and creating
+    * an inner video element.
+    *
+    * @param {HTMLVideoElement} xVideo
+    */
+    function init(xVideo) {
+        var playlist = [];
+        var sources = xtag.toArray(xVideo.querySelectorAll('x-video > source'));
+        var tracks = [];
+        var attributes = {};
+
+        // Let's process the case where `<x-video>` tag has a src attribute or sub `<source>` elements.
+        if (xVideo.hasAttribute('src') || sources.length) {
+            // Single video.
+            playlist[0] = videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'));
+
+            // Doest it have inner source/track elements?
+            var tracks = xtag.toArray(xVideo.querySelectorAll('x-video > track'));
+            if (tracks.length) {
+                playlist[0].trackRange = range(0, tracks.length);
+
+                tracks.forEach(function (track) {
+                    xVideo.removeChild(track);
+                });
+            }
+
+            // Remove all sources.
+            sources.forEach(function (source) {
+                xVideo.removeChild(source);
+            });
+        } else {
+            // Multiple videos playlist.
+            var videos = xtag.toArray(xVideo.querySelectorAll('x-video > video'));
+            var tracksLength = 0;
+
+            videos.forEach(function (video, currentIndex) {
+                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc);
+
+                var videoTracks = xtag.toArray(video.querySelectorAll('track'));
+                if (videoTracks.length) {
+                    playlist[currentIndex].trackRange = range(tracksLength, videoTracks.length);
+
+                    tracks = tracks.concat(videoTracks); // To be appended to inner video.
+                    tracksLength += videoTracks.length;
+                }
+
+                xVideo.removeChild(video);
+            });
+
+            // Copy HTML attributes of the first <video> tag on <x-video> tag.
+            VIDEO_ATTRIBUTES.forEach(function (attribute) {
+                if (videos[0].hasAttribute(attribute)) {
+                    attributes[attribute] = videos[0].getAttribute(attribute);
+                }
+            });
+            if (videos[0].hasAttribute('controls')) {
+                attributes['controls'] = '';
+            }
+        }
+
+        // Keep a list of all HTML attributes on <x-video> tag to replicate to inner <video> tag.
+        // The attributes present on the first video element will be overriden here.
+        VIDEO_ATTRIBUTES.forEach(function (attribute) {
+            if (xVideo.hasAttribute(attribute)) {
+                attributes[attribute] = xVideo.getAttribute(attribute);
+            }
+        });
+
+        // Create the inner video element.
+        var innerVideo = document.createElement('video');
+
+        for (var attr in attributes) {
+            xVideo.setAttribute(attr, attributes[attr]);
+            innerVideo.setAttribute(attr, attributes[attr]);
+        }
+
+        // Propagate events of inner video element to x-video element.
+        VIDEO_EVENT_TYPES.forEach(function (eventType) {
+            innerVideo.addEventListener(eventType, function (event) {
+                xtag.fireEvent(xVideo, eventType);
+            }, false);
+        });
+
+        if (playlist[0].src !== null) {
+            innerVideo.src = playlist[0].src;
+        }
+
+        sources.forEach(function (source) {
+            innerVideo.appendChild(source);
+        });
+
+        tracks.forEach(function (track) {
+            innerVideo.appendChild(track);
+        });
+
+        // For each video in the playlist, we find the chapter cues.
+        innerVideo.addEventListener('durationchange', function () {
+            playlist.forEach(function (obj) {
+                obj.trackRange.some(function (trackIndex) {
+                    var textTrack = innerVideo.textTracks[trackIndex];
+                    if (textTrack.kind === 'chapters' && (textTrack.mode === 'hidden' || textTrack.mode === 'showing')) {
+                        obj.chapterCues = xtag.toArray(textTrack.cues);
+                        return true;
+                    }
+                    return false;
+                });
+            });
+        });
+
+        xVideo.xtag.video = innerVideo;
+        xVideo.xtag.mediaControls.appendChild(innerVideo);
+
+        //xVideo.xtag.mediaControls.insertBefore(xVideo.xtag.video, xVideo.xtag.mediaControlsEnclosure);
+        xVideo.playlist = playlist;
+    }
+
+    /**
     * Generate internal representation of video elements (src, chapters...).
     *
     * @param {string} id
@@ -217,10 +347,11 @@
     */
     function videoSrcElement(id, src) {
         if (typeof id === "undefined") { id = null; }
-        if (typeof src === "undefined") { src = ''; }
+        if (typeof src === "undefined") { src = null; }
         return {
             id: id,
             src: src,
+            trackRange: null,
             chapterCues: null
         };
     }
@@ -231,9 +362,6 @@
             created: function () {
                 var xVideo = this;
 
-                // The initial list of DOM element children of <x-video> element.
-                var children = xtag.toArray(xVideo.children);
-
                 // First of all, we hide the native player in Chrome, not needed as JavaScript is enabled.
                 var styleTag = document.createElement('style');
                 styleTag.textContent = 'x-video video::-webkit-media-controls{display:none}';
@@ -242,23 +370,6 @@
                 // Setting some object's properties.
                 xVideo.videoIndex = 0; // The index of the current video in the playlist.
                 xVideo.preTimelinePausedStatus = false; // The paused state of the video before using timeline.
-                xVideo.playlist = children.filter(function (child) {
-                    return child.tagName === 'VIDEO';
-                }).map(function (child, index) {
-                    var id = child.getAttribute('id');
-                    var src = child.getAttribute('src');
-                    if (index > 0) {
-                        // We remove all the video, except the first one, but keep a reference to the src.
-                        xVideo.removeChild(child);
-                    }
-                    return videoSrcElement(id, src);
-                }).filter(function (obj, index) {
-                    // We remove empty src.
-                    return typeof obj.src === 'string';
-                });
-                if (xVideo.hasAttribute('src')) {
-                    xVideo.playlist = [videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'))].concat(xVideo.playlist);
-                }
 
                 // Appending the internal elements.
                 this.appendChild(template.cloneNode(true));
@@ -278,61 +389,11 @@
                 this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
                 this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
-                // Is there already an inner video element?
-                var tmpVideo = null;
-                children.some(function (child) {
-                    if (child.tagName === 'VIDEO') {
-                        tmpVideo = child;
-                        return true;
-                    }
-                    return false;
-                });
-
-                if (tmpVideo) {
-                    // There is already an inner <video> tag.
-                    this.xtag.video = tmpVideo;
-
-                    // Copy HTML attributes of inner <video> tag on <x-video> tag.
-                    videoAttributes.forEach(function (attribute) {
-                        if (xVideo.xtag.video.hasAttribute(attribute)) {
-                            xVideo.setAttribute(attribute, xVideo.xtag.video.getAttribute(attribute));
-                        }
-                    });
-                    if (xVideo.xtag.video.hasAttribute('controls')) {
-                        xVideo.setAttribute('controls', xVideo.xtag.video.getAttribute('controls'));
-                        xVideo.xtag.video.removeAttribute('controls');
-                    }
-                } else {
-                    // No <video> tag in HTML, we create it.
-                    this.xtag.video = document.createElement('video');
-                }
-
-                // Copy HTML attributes of <x-video> tag on inner <video> tag.
-                videoAttributes.forEach(function (attribute) {
-                    if (xVideo.hasAttribute(attribute)) {
-                        xVideo.xtag.video.setAttribute(attribute, xVideo.getAttribute(attribute));
-                    }
-                });
-
-                this.xtag.mediaControls.insertBefore(this.xtag.video, this.xtag.mediaControlsEnclosure);
-
-                // Move x-video children elements to the inner video element.
-                children.forEach(function (child) {
-                    if (child === xVideo.xtag.video || (child.tagName !== 'TRACK' && child.tagName !== 'SOURCE')) {
-                        return;
-                    }
-                    xVideo.xtag.video.appendChild(child);
-                });
+                // Initialize the DOM elements.
+                init(xVideo);
 
                 // From there, we need to update `children` to be sure to refer to the inner video children.
-                children = xtag.toArray(this.xtag.video.children);
-
-                // Propagate HTML events of inner video element to x-video element.
-                videoEventTypes.forEach(function (eventType) {
-                    xVideo.xtag.video.addEventListener(eventType, function (event) {
-                        xtag.fireEvent(xVideo, eventType);
-                    }, false);
-                });
+                var children = xtag.toArray(this.xtag.video.children);
 
                 // Listen to the inner video events to maintain the interface in sync with the video state.
                 xtag.addEvents(this.xtag.video, {
@@ -361,7 +422,10 @@
                         // At the end of the video, update the src to the next in the playlist, if any.
                         if (xVideo.playlist.length > 1 && xVideo.videoIndex < xVideo.playlist.length - 1) {
                             xVideo.videoIndex++;
-                            xVideo.xtag.video.src = xVideo.playlist[xVideo.videoIndex].src;
+
+                            // Update the src attribute.
+                            xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+
                             xtag.fireEvent(xVideo, 'videochange');
                         }
                     }
@@ -407,65 +471,62 @@
                 }
 
                 // Build a list of all valid track elements.
-                var chapterTracks = children.filter(function (child) {
-                    return child.tagName === 'TRACK' && child.kind === 'chapters' && child.hasAttribute('src') && child.getAttribute('src') !== '';
+                /*var chapterTracks = children.filter(function(child) {
+                return child.tagName === 'TRACK' && child.kind === 'chapters' &&
+                child.hasAttribute('src') && child.getAttribute('src') !== '';
                 });
-
+                
                 // Then, select the track element with a default attribute...
                 var activeChapterTrack = null;
-                chapterTracks.some(function (chapterTrack) {
-                    if (chapterTrack.hasAttribute('default')) {
-                        activeChapterTrack = chapterTrack;
-                        return true;
-                    }
-                    return false;
-                });
-
+                chapterTracks.some(function(chapterTrack) {
+                if (chapterTrack.hasAttribute('default')) {
+                activeChapterTrack = chapterTrack;
+                return true;
+                }
+                return false;
+                })
                 // ... or just pick up the first one in the list.
                 if (activeChapterTrack === null && chapterTracks.length > 0) {
-                    activeChapterTrack = chapterTracks[0];
+                activeChapterTrack = chapterTracks[0];
                 }
-
+                
                 if (activeChapterTrack) {
-                    // We defer processing the WebVTT file in case the browser will do it.
-                    xVideo.xtag.video.addEventListener('durationchange', waitForCues, false);
-                }
-
+                // We defer processing the WebVTT file in case the browser will do it.
+                xVideo.xtag.video.addEventListener('durationchange', waitForCues, false);
+                }*/
                 /**
                 * Check if the active chapter track element already has cues loaded and parsed by the
                 * browser. If not, we do it ourselves.
                 */
-                function waitForCues() {
-                    if (activeChapterTrack.track.cues && activeChapterTrack.track.cues.length > 0) {
-                        // Let the browser do the hard work for us.
-                        xVideo.playlist[xVideo.videoIndex].chapterCues = xtag.toArray(activeChapterTrack.track.cues);
-                        processCues(xVideo.playlist[xVideo.videoIndex].chapterCues);
-                    } else {
-                        loadWebVTTFile(activeChapterTrack.src, function (cues) {
-                            xVideo.playlist[xVideo.videoIndex].chapterCues = cues;
-                            processCues(xVideo.playlist[xVideo.videoIndex].chapterCues);
-                        });
-                    }
-
-                    // Once executed, we remove the event listener.
-                    xVideo.xtag.video.removeEventListener('durationchange', waitForCues, false);
+                /*function waitForCues() {
+                if (activeChapterTrack.track.cues && activeChapterTrack.track.cues.length > 0) {
+                // Let the browser do the hard work for us.
+                xVideo.playlist[xVideo.videoIndex].chapterCues = xtag.toArray(activeChapterTrack.track.cues);
+                processCues(xVideo.playlist[xVideo.videoIndex].chapterCues);
+                } else {
+                loadWebVTTFile(activeChapterTrack.src, function(cues) {
+                xVideo.playlist[xVideo.videoIndex].chapterCues = cues;
+                processCues(xVideo.playlist[xVideo.videoIndex].chapterCues);
+                });
                 }
-
+                
+                // Once executed, we remove the event listener.
+                xVideo.xtag.video.removeEventListener('durationchange', waitForCues, false);
+                }*/
                 /**
                 * Now that we have cues, we use them and show the chapter navigation buttons.
                 *
                 * @param {Array.<Object>} cues
                 */
-                function processCues(cues) {
-                    if (!cues.length) {
-                        // We expect at least one element.
-                        return;
-                    }
-
-                    xVideo.xtag.rewindButton.removeAttribute('style');
-                    xVideo.xtag.forwardButton.removeAttribute('style');
+                /*function processCues(cues: Array) {
+                if (!cues.length) {
+                // We expect at least one element.
+                return;
                 }
-
+                
+                xVideo.xtag.rewindButton.removeAttribute('style');
+                xVideo.xtag.forwardButton.removeAttribute('style');
+                }*/
                 // Show the full screen button if the API is available.
                 fullscreenEnabledPrefixes.some(function (prefixedFullscreenEnabled) {
                     if (document[prefixedFullscreenEnabled]) {
@@ -486,7 +547,7 @@
                     return;
                 }
 
-                if (videoAttributes.indexOf(attribute) > -1) {
+                if (VIDEO_ATTRIBUTES.indexOf(attribute) > -1) {
                     if (this.hasAttribute(attribute)) {
                         this.xtag.video.setAttribute(attribute, newValue);
                     } else {
@@ -497,6 +558,7 @@
         },
         events: {
             'click:delegate(.media-controls-play-button)': function (event) {
+                var xVideo = event.currentTarget;
                 if (xVideo.xtag.video.paused) {
                     xVideo.xtag.video.play();
                 } else {
@@ -504,6 +566,7 @@
                 }
             },
             'click:delegate(input.media-controls-rewind-button)': function (event) {
+                var xVideo = event.currentTarget;
                 var currentTime = xVideo.xtag.video.currentTime;
                 var currentChapter = null;
 
@@ -516,8 +579,10 @@
                 if (currentTime === 0 && xVideo.playlist.length > 1 && xVideo.videoIndex > 0) {
                     // We play the previous video in the playlist.
                     xVideo.videoIndex--;
-                    xVideo.xtag.video.src = xVideo.playlist[xVideo.videoIndex].src;
-                    xVideo.xtag.video.play();
+                    xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+
+                    //xVideo.textTracks = xVideo.playlist[xVideo.videoIndex].textTracks;
+                    xVideo.play();
 
                     xtag.fireEvent(xVideo, 'videochange');
                     return;
@@ -525,8 +590,8 @@
 
                 if (!xVideo.playlist[xVideo.videoIndex].chapterCues || !xVideo.playlist[xVideo.videoIndex].chapterCues.length) {
                     // No chapters? We go at the beginning of the video.
-                    xVideo.xtag.video.currentTime = 0;
-                    xVideo.xtag.video.play();
+                    xVideo.currentTime = 0;
+                    xVideo.play();
                     return;
                 }
 
@@ -534,8 +599,8 @@
 
                 if (currentChapter !== null) {
                     // Jump to the previous chapter.
-                    xVideo.xtag.video.currentTime = xVideo.playlist[xVideo.videoIndex].chapterCues[currentChapter].startTime;
-                    xVideo.xtag.video.play();
+                    xVideo.currentTime = xVideo.playlist[xVideo.videoIndex].chapterCues[currentChapter].startTime;
+                    xVideo.play();
 
                     // Emit a chapterchange event.
                     xtag.fireEvent(xVideo, 'chapterchange', {
@@ -544,14 +609,15 @@
                 }
             },
             'click:delegate(input.media-controls-forward-button)': function (event) {
-                var currentTime = xVideo.xtag.video.currentTime;
+                var xVideo = event.currentTarget;
+                var currentTime = xVideo.currentTime;
                 var currentChapter = null;
-                var targetTime = xVideo.xtag.video.duration;
+                var targetTime = xVideo.duration;
                 var targetChapter = 0;
 
                 if (!xVideo.playlist[xVideo.videoIndex].chapterCues || !xVideo.playlist[xVideo.videoIndex].chapterCues.length) {
                     // No chapters? We go straight to the end of the video.
-                    xVideo.xtag.video.currentTime = targetTime;
+                    xVideo.currentTime = targetTime;
                     return;
                 }
 
@@ -573,11 +639,11 @@
                 }
 
                 // Update the video currentTime.
-                xVideo.xtag.video.currentTime = targetTime;
+                xVideo.currentTime = targetTime;
 
-                if (targetTime !== xVideo.xtag.video.duration) {
+                if (targetTime !== xVideo.duration) {
                     // We resume playback if the cursor is not at the end of the video.
-                    xVideo.xtag.video.play();
+                    xVideo.play();
                 }
             },
             /**
@@ -588,34 +654,45 @@
             * @todo Test on touch devices and fix accordingly.
             */
             'mousedown:delegate(input.media-controls-timeline)': function (event) {
-                xVideo.preTimelinePausedStatus = xVideo.xtag.video.paused;
-                xVideo.xtag.video.pause();
+                var xVideo = event.currentTarget;
+                xVideo.preTimelinePausedStatus = xVideo.paused;
+                xVideo.pause();
                 xVideo.timelineMoving = true;
             },
             'mousemove:delegate(input.media-controls-timeline)': function (event) {
+                var xVideo = event.currentTarget;
                 if (!xVideo.timelineMoving) {
                     return;
                 }
-                xVideo.xtag.video.paused = true;
-                xVideo.xtag.video.currentTime = xVideo.xtag.timeline.value;
+                xVideo.pause();
+                xVideo.currentTime = xVideo.xtag.timeline.value;
                 //xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(xVideo.xtag.timeline.value);
             },
             'mouseup:delegate(input.media-controls-timeline)': function (event) {
+                var xVideo = event.currentTarget;
                 xVideo.timelineMoving = false;
                 if (!xVideo.preTimelinePausedStatus) {
-                    xVideo.xtag.video.play();
+                    xVideo.play();
                 }
             },
             'click:delegate(input.media-controls-mute-button)': function (event) {
-                xVideo.xtag.video.muted = !xVideo.xtag.video.muted;
+                var xVideo = event.currentTarget;
+                xVideo.muted = !xVideo.muted;
             },
             'input:delegate(.media-controls-volume-slider)': function (event) {
-                xVideo.xtag.video.volume = xVideo.xtag.volumeSlider.value;
+                var xVideo = event.currentTarget;
+                xVideo.volume = xVideo.xtag.volumeSlider.value;
+                if (xVideo.volume === 0) {
+                    xVideo.muted = true;
+                } else {
+                    xVideo.muted = false;
+                }
             },
             'click:delegate(.media-controls-fullscreen-button)': function (event) {
                 // @todo If already on fullscreen mode, click on the button should exit fullscreen.
                 // @todo Dismiss controls on full screen mode.
                 // @todo Cache the prefixed version and reuse it.
+                var xVideo = event.currentTarget;
                 requestFullscreenPrefixes.some(function (prefixedRequestFullscreen) {
                     if (xVideo.xtag.mediaControls[prefixedRequestFullscreen]) {
                         xVideo.xtag.mediaControls[prefixedRequestFullscreen]();
@@ -827,9 +904,6 @@
             networkState: {
                 get: function () {
                     return this.xtag.video.networkState;
-                },
-                set: function (value) {
-                    this.xtag.video.networkState = value;
                 }
             },
             playbackRate: {
@@ -927,8 +1001,10 @@
             play: function () {
                 return this.xtag.video.play();
             },
-            getVideoPlaybackQuality: function () {
-                return this.xtag.video.getVideoPlaybackQuality();
+            addTextTrack: function (kind, label, language) {
+                if (typeof label === "undefined") { label = undefined; }
+                if (typeof language === "undefined") { language = undefined; }
+                return this.xtag.video.addTextTrack(kind, label, language);
             },
             // @todo Check support for this attribute before adding to methods.
             mozGetMetadata: function () {

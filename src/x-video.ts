@@ -54,21 +54,37 @@
     'waiting'
   ];
 
-  var fullscreenEnabledPrefixes = [
+  // Find the prefixed version of document.fullscreenEnabled.
+  var prefixedFullscreenEnabled = null;
+  [
     'fullscreenEnabled',
     'mozFullScreenEnabled',
     'webkitFullscreenEnabled',
     'msFullscreenEnabled',
     'fullScreenEnabled' // Just in case.
-  ];
+  ].some(function(prefix) {
+      if (document[prefix]) {
+        prefixedFullscreenEnabled = prefix;
+        return true;
+      }
+      return false;
+    });
 
-  var requestFullscreenPrefixes = [
+  // Find the prefixed version of element.requestFullscreen().
+  var prefixedRequestFullscreen = null;
+  [
     'requestFullscreen',
     'msRequestFullscreen',
     'mozRequestFullScreen',
     'webkitRequestFullscreen',
     'requestFullScreen', // Just in case.
-  ];
+  ].some(function(prefix) {
+      if (document.body[prefix]) {
+        prefixedRequestFullscreen = prefix;
+        return true;
+      }
+      return false;
+    });
 
   var template = xtag.createFragment('<div class="media-controls">' +
     '<div class="media-controls-enclosure">' +
@@ -574,13 +590,9 @@
          }*/
 
         // Show the full screen button if the API is available.
-        fullscreenEnabledPrefixes.some(function(prefixedFullscreenEnabled) {
-          if (document[prefixedFullscreenEnabled]) {
-            xVideo.xtag.fullscreenButton.removeAttribute('style');
-            return true;
-          }
-          return false;
-        });
+        if (prefixedRequestFullscreen) {
+          xVideo.xtag.fullscreenButton.removeAttribute('style');
+        }
       },
       inserted: function() {
       },
@@ -741,15 +753,10 @@
       'click:delegate(.media-controls-fullscreen-button)': function(event) {
         // @todo If already on fullscreen mode, click on the button should exit fullscreen.
         // @todo Dismiss controls on full screen mode.
-        // @todo Cache the prefixed version and reuse it.
         var xVideo = event.currentTarget;
-        requestFullscreenPrefixes.some(function(prefixedRequestFullscreen) {
-          if (xVideo.xtag.mediaControls[prefixedRequestFullscreen]) {
-            xVideo.xtag.mediaControls[prefixedRequestFullscreen]();
-            return true;
-          }
-          return false;
-        });
+        if (prefixedRequestFullscreen) {
+          xVideo.xtag.mediaControls[prefixedRequestFullscreen]();
+        }
       }
     },
     // @todo Refactor to be less verbose and more DRY.

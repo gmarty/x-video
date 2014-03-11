@@ -52,21 +52,37 @@
         'waiting'
     ];
 
-    var fullscreenEnabledPrefixes = [
+    // Find the prefixed version of document.fullscreenEnabled.
+    var prefixedFullscreenEnabled = null;
+    [
         'fullscreenEnabled',
         'mozFullScreenEnabled',
         'webkitFullscreenEnabled',
         'msFullscreenEnabled',
         'fullScreenEnabled'
-    ];
+    ].some(function (prefix) {
+        if (document[prefix]) {
+            prefixedFullscreenEnabled = prefix;
+            return true;
+        }
+        return false;
+    });
 
-    var requestFullscreenPrefixes = [
+    // Find the prefixed version of element.requestFullscreen().
+    var prefixedRequestFullscreen = null;
+    [
         'requestFullscreen',
         'msRequestFullscreen',
         'mozRequestFullScreen',
         'webkitRequestFullscreen',
         'requestFullScreen'
-    ];
+    ].some(function (prefix) {
+        if (document.body[prefix]) {
+            prefixedRequestFullscreen = prefix;
+            return true;
+        }
+        return false;
+    });
 
     var template = xtag.createFragment('<div class="media-controls">' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' + '<input type="button" class="media-controls-rewind-button" style="display:none;">' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" style="display:none;">' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' + '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' + '</div>' + '</div>' + '</div>');
 
@@ -540,13 +556,9 @@
                 xVideo.xtag.forwardButton.removeAttribute('style');
                 }*/
                 // Show the full screen button if the API is available.
-                fullscreenEnabledPrefixes.some(function (prefixedFullscreenEnabled) {
-                    if (document[prefixedFullscreenEnabled]) {
-                        xVideo.xtag.fullscreenButton.removeAttribute('style');
-                        return true;
-                    }
-                    return false;
-                });
+                if (prefixedRequestFullscreen) {
+                    xVideo.xtag.fullscreenButton.removeAttribute('style');
+                }
             },
             inserted: function () {
             },
@@ -703,15 +715,10 @@
             'click:delegate(.media-controls-fullscreen-button)': function (event) {
                 // @todo If already on fullscreen mode, click on the button should exit fullscreen.
                 // @todo Dismiss controls on full screen mode.
-                // @todo Cache the prefixed version and reuse it.
                 var xVideo = event.currentTarget;
-                requestFullscreenPrefixes.some(function (prefixedRequestFullscreen) {
-                    if (xVideo.xtag.mediaControls[prefixedRequestFullscreen]) {
-                        xVideo.xtag.mediaControls[prefixedRequestFullscreen]();
-                        return true;
-                    }
-                    return false;
-                });
+                if (prefixedRequestFullscreen) {
+                    xVideo.xtag.mediaControls[prefixedRequestFullscreen]();
+                }
             }
         },
         // @todo Refactor to be less verbose and more DRY.

@@ -1,5 +1,6 @@
 elementSize = 30px
 elementMargin = 4px
+goldenRatio = 1.618033988749895
 
 x-video
   object-fit contain
@@ -14,7 +15,7 @@ x-video .media-controls
   justify-content flex-end
   align-items center
 
-x-video .media-controls:-webkit-full-screen
+x-video .media-controls::-webkit-full-screen
   width 100%
   height 100%
 
@@ -77,6 +78,10 @@ x-video .media-controls-play-button
   background embedurl('svg/play.svg')
   background-size elementSize
 
+x-video .media-controls-play-button.paused
+  background embedurl('svg/pause.svg')
+  background-size elementSize
+
 x-video .media-controls-rewind-button
   /*-webkit-appearance media-rewind-button*/
   display flex
@@ -123,18 +128,12 @@ x-video .media-controls-forward-button
   background embedurl('svg/forward.svg')
   background-size elementSize
 
-x-video .media-controls-play-button.paused
-  background embedurl('svg/pause.svg')
-  background-size elementSize
-
 x-video .media-controls-timeline
   /*-webkit-appearance media-slider*/
   display flex
   flex 1 1 auto
-  height 8px
   margin 0 elementMargin * 2 0 0
   padding 0
-  background-color rgba(0, 0, 0, 0)
   min-width 25px
   border initial
   color inherit
@@ -199,11 +198,9 @@ x-video .media-controls-volume-slider
   /*-webkit-appearance media-volume-slider*/
   display flex
   flex 1 1.899999976158142 auto
-  height 8px
   max-width 70px
   margin 0 elementMargin * 2 0 0
   padding 0
-  background-color rgba(0, 0, 0, 0)
   min-width 15px
   border initial
   color inherit
@@ -251,3 +248,38 @@ x-video .media-controls-fullscreen-button
   color inherit
   background embedurl('svg/fullscreen.svg')
   background-size elementSize
+
+x-video input[type='range']
+  -webkit-appearance none
+  background rgba(107, 107, 107, 0.8)
+  border-radius (elementSize / 10)
+  border 1px solid rgba(235, 235, 235, 0.5)
+  height (elementSize / 5)
+
+// Firefox specific
+x-video input[type='range']::-moz-range-track
+  border none
+  background transparent
+  height (elementSize / 5)
+
+x-video input[type='range']::-moz-range-progress
+  border none
+  background rgba(235, 235, 235, 0.5)
+  height (elementSize / 5)
+
+x-video input[type='range']::-moz-range-thumb
+  border none
+  background #FFF
+  width round(elementSize / goldenRatio)
+  height round(elementSize / goldenRatio)
+  border-radius round(elementSize / goldenRatio / 2)
+
+// Webkit specific
+//x-video input[type='range']::-webkit-slider-container
+//x-video input[type='range']::-webkit-slider-runnable-track
+x-video input[type='range']::-webkit-slider-thumb
+  -webkit-appearance none
+  background #FFF
+  width round(elementSize / goldenRatio)
+  height round(elementSize / goldenRatio)
+  border-radius round(elementSize / goldenRatio / 2)

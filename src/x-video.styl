@@ -1,3 +1,4 @@
+maxWidth = 800px
 elementSize = 30px
 elementMargin = 4px
 goldenRatio = 1.618033988749895
@@ -26,7 +27,7 @@ x-video .media-controls video
 
 x-video .media-controls-enclosure
   width 100%
-  max-width 800px
+  max-width maxWidth
   flex-shrink 0
   bottom 0
   text-indent 0
@@ -276,10 +277,23 @@ x-video input[type='range']::-moz-range-thumb
 
 // Webkit specific
 //x-video input[type='range']::-webkit-slider-container
-//x-video input[type='range']::-webkit-slider-runnable-track
+x-video input[type='range']::-webkit-slider-runnable-track
+  overflow hidden
+
 x-video input[type='range']::-webkit-slider-thumb
   -webkit-appearance none
   background #FFF
   width round(elementSize / goldenRatio)
   height round(elementSize / goldenRatio)
   border-radius round(elementSize / goldenRatio / 2)
+  position relative
+
+x-video input[type='range']::-webkit-slider-thumb:after
+  background rgba(235, 235, 235, 0.5)
+  width maxWidth
+  height (elementSize / 5)
+  top (elementSize / 5)
+  right round(elementSize / goldenRatio)
+  position absolute
+  z-index 1
+  content ""

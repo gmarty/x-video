@@ -1,4 +1,4 @@
-buttonWidth = 30px
+elementSize = 30px
 elementMargin = 4px
 
 x-video
@@ -26,7 +26,7 @@ x-video .media-controls video
 x-video .media-controls-enclosure
   width 100%
   max-width 800px
-  height 30px
+  height elementSize
   flex-shrink 0
   bottom 0
   text-indent 0
@@ -37,8 +37,8 @@ x-video .media-controls-enclosure
   left 0
 
 x-video .media-controls-enclosure
-  padding 0 5px 5px
-  height 35px
+  padding 0 elementMargin elementMargin
+  height (elementSize + elementMargin)
   flex-shrink 0
 
 x-video .media-controls-panel
@@ -55,7 +55,7 @@ x-video .media-controls-panel
   overflow hidden
   text-align right
   bottom auto
-  height 30px
+  height elementSize
   background-color rgba(20, 20, 20, 0.8)
   border-radius 5px
 
@@ -71,15 +71,16 @@ x-video .media-controls-play-button
   border-image-repeat initial
   box-sizing border-box
   -moz-box-sizing border-box
-  width buttonWidth
-  height 30px
-  line-height 30px
+  width elementSize
+  height elementSize
+  line-height elementSize
   margin-left elementMargin
   margin-right elementMargin
   padding 0
   background-color initial
   color inherit
   background embedurl('svg/play.svg')
+  background-size elementSize
 
 x-video .media-controls-rewind-button
   /*-webkit-appearance media-rewind-button*/
@@ -93,15 +94,16 @@ x-video .media-controls-rewind-button
   border-image-repeat initial
   box-sizing border-box
   -moz-box-sizing border-box
-  width buttonWidth
-  height 30px
-  line-height 30px
+  width elementSize
+  height elementSize
+  line-height elementSize
   margin-left elementMargin
   margin-right elementMargin
   padding 0
   background-color initial
   color inherit
   background embedurl('svg/rewind.svg')
+  background-size elementSize
 
 x-video .media-controls-forward-button
   /*-webkit-appearance media-forward-button*/
@@ -115,18 +117,20 @@ x-video .media-controls-forward-button
   border-image-repeat initial
   box-sizing border-box
   -moz-box-sizing border-box
-  width buttonWidth
-  height 30px
-  line-height 30px
+  width elementSize
+  height elementSize
+  line-height elementSize
   margin-left elementMargin
   margin-right elementMargin
   padding 0
   background-color initial
   color inherit
   background embedurl('svg/forward.svg')
+  background-size elementSize
 
 x-video .media-controls-play-button.paused
   background embedurl('svg/pause.svg')
+  background-size elementSize
 
 x-video .media-controls-timeline
   /*-webkit-appearance media-slider*/
@@ -154,12 +158,12 @@ x-video .media-controls-current-time-display, x-video .media-controls-time-remai
   border-image-outset initial
   border-image-repeat initial
   cursor default
-  height 30px
+  height elementSize
   margin 0 elementMargin 0 0
   padding 0
-  line-height 30px
+  line-height elementSize
   font-family Arial, Helvetica, sans-serif
-  font-size 13px
+  font-size ((elementSize - elementMargin) / 2)
   font-weight bold
   font-style normal
   color #FFF
@@ -182,17 +186,19 @@ x-video .media-controls-mute-button
   border-image-repeat initial
   box-sizing border-box
   -moz-box-sizing border-box
-  width buttonWidth
-  height 30px
-  line-height 30px
+  width elementSize
+  height elementSize
+  line-height elementSize
   margin 0 elementMargin 0 0
   padding 0
   background-color initial
   color inherit
   background embedurl('svg/audio.svg')
+  background-size elementSize
 
 x-video .media-controls-mute-button.muted
   background embedurl('svg/audio-muted.svg')
+  background-size elementSize
 
 x-video .media-controls-volume-slider
   /*-webkit-appearance media-volume-slider*/
@@ -219,9 +225,9 @@ x-video .media-controls-toggle-closed-captions-button
   border-image-repeat initial
   box-sizing border-box
   -moz-box-sizing border-box
-  width buttonWidth
-  height 30px
-  line-height 30px
+  width elementSize
+  height elementSize
+  line-height elementSize
   margin-left - (elementMargin / 2)
   margin-right elementMargin
   padding 0
@@ -240,12 +246,13 @@ x-video .media-controls-fullscreen-button
   border-image-repeat initial
   box-sizing border-box
   -moz-box-sizing border-box
-  width buttonWidth
-  height 30px
-  line-height 30px
+  width elementSize
+  height elementSize
+  line-height elementSize
   margin-left - (elementMargin / 2)
   margin-right elementMargin
   padding 0
   background-color initial
   color inherit
   background embedurl('svg/fullscreen.svg')
+  background-size elementSize

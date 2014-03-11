@@ -346,12 +346,10 @@
       innerVideo.appendChild(source);
     });
 
-    tracks.forEach(function(track) {
-      innerVideo.appendChild(track);
-    });
+    // When a track is loading, we find the chapter cues.
+    function updateChapterCues(event) {
+      var target = event.currentTarget;
 
-    // For each video in the playlist, we find the chapter cues.
-    innerVideo.addEventListener('durationchange', function() {
       playlist.forEach(function(obj) {
         obj.trackRange.some(function(trackIndex) {
           var textTrack = innerVideo.textTracks[trackIndex];
@@ -362,7 +360,20 @@
           }
           return false;
         });
+
+        // Then, remove the event listener.
+        if (target.tagName === 'TRACK') {
+          target.removeEventListener('load', updateChapterCues);
+        }
       });
+    }
+
+    tracks.forEach(function(track) {
+      track.addEventListener('load', updateChapterCues);
+      // Unfortunately, Firefox 28 doesn't fire events on track elements, so we still need this:
+      innerVideo.addEventListener('durationchange', updateChapterCues);
+
+      innerVideo.appendChild(track);
     });
 
     xVideo.xtag.mediaControls.appendChild(innerVideo);

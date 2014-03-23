@@ -117,7 +117,6 @@
 
     /**
     * Load a *.vtt file and parse it.
-    * Shamelessly stolen from http://www.html5videoguide.net/demos/google_io/3_navigation/
     *
     * @param {string} url
     * @param callback
@@ -140,6 +139,7 @@
 
     /**
     * Parse a *.vtt file.
+    * Shamelessly stolen from http://www.html5videoguide.net/demos/google_io/3_navigation/
     *
     * @param {string} data
     * @returns {Array.<Object>}
@@ -333,6 +333,10 @@
         // When a track is loading, we find the chapter cues.
         function updateChapterCues(event) {
             var target = event.currentTarget;
+
+            if (!innerVideo.textTracks) {
+                return;
+            }
 
             playlist.forEach(function (obj) {
                 obj.trackRange.some(function (trackIndex) {

@@ -11,7 +11,7 @@ module.exports = function(grunt) {
         dest: 'dist',
         options: {
           target: 'es5',
-          base_path: 'src',
+          basePath: 'src',
           sourcemap: false,
           declaration: false,
           comments: true

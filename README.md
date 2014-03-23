@@ -73,3 +73,20 @@ xVideo.addEventListener('videochange', function() {
   this.play();
 });
 ```
+
+## Methods
+
+### playByIndex(index)
+
+To play the video located at a certain index in the playlist, you can do:
+```html
+<x-video>
+  <video src="video-1.webm"></video>
+  <video src="video-2.webm"></video>
+  <video src="video-3.webm"></video>
+</x-video>
+<script>
+var xVideo = document.querySelector('x-video');
+xVideo.playByIndex(2); // Play the 3rd video in the list.
+</script>
+```

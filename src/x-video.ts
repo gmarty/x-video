@@ -1069,6 +1069,22 @@
       // @todo Check support for this attribute before adding to methods.
       mozGetMetadata: function() {
         return this.xtag.video.mozGetMetadata();
+      },
+
+      // New methods.
+      playByIndex: function(videoIndex: number) {
+        if (typeof videoIndex !== 'number') {
+          console.error('Invalid video number');
+          return;
+        }
+        if (videoIndex < 0 || videoIndex >= this.playlist.length) {
+          console.error('Video requested out of bound');
+          return;
+        }
+
+        this.videoIndex = videoIndex;
+        this.src = this.playlist[videoIndex].src;
+        this.play();
       }
     }
   });

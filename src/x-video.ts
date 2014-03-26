@@ -989,7 +989,7 @@
           return this.xtag.video.src;
         },
         set: function(value) {
-          xVideo.playlist[xVideo.videoIndex].src = value;
+          this.playlist[this.videoIndex].src = value;
           this.xtag.video.src = value;
         }
       },

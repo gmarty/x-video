@@ -447,14 +447,14 @@
         this.xtag.timeRemainingDisplay = this.querySelector('.media-controls-time-remaining-display');
         this.xtag.muteButton = this.querySelector('.media-controls-mute-button');
         this.xtag.volumeSlider = this.querySelector('.media-controls-volume-slider');
+        this.xtag.menuButton = this.querySelector('.media-controls-menu-button');
         this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
         this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
+        this.xtag.xMenus = this.querySelectorAll('x-menu');
+
         // Initialize the DOM elements.
         init(xVideo);
-
-        // From there, we need to update `children` to be sure to refer to the inner video children.
-        var children = xtag.toArray(this.xtag.video.children);
 
         // Listen to the inner video events to maintain the interface in sync with the video state.
         xtag.addEvents(this.xtag.video, {
@@ -590,6 +590,11 @@
          xVideo.xtag.rewindButton.removeAttribute('style');
          xVideo.xtag.forwardButton.removeAttribute('style');
          }*/
+
+        // Show the menu button if a inner element is found.
+        if (this.xtag.xMenus.length) {
+          xVideo.xtag.menuButton.removeAttribute('style');
+        }
 
         // Show the full screen button if the API is available.
         if (prefixedRequestFullscreen) {
@@ -750,6 +755,13 @@
         } else {
           xVideo.muted = false;
         }
+      },
+
+      'click:delegate(.media-controls-menu-button)': function(event) {
+        var xVideo = event.currentTarget;
+
+        xVideo.pause();
+        xVideo.xtag.xMenus[0].show();
       },
 
       'click:delegate(.media-controls-fullscreen-button)': function(event) {

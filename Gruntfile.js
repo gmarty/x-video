@@ -25,15 +25,24 @@ module.exports = function(grunt) {
           urlfunc: 'embedurl'
         },
         files: {
-          'dist/x-video.css': 'src/x-video.styl'
+          'dist/x-video.css': ['src/x-video.styl', 'src/x-menu.styl']
         }
+      }
+    },
+
+    concat: {
+      options: {
+      },
+      dist: {
+        src: ['dist/x-video.js', 'dist/x-menu.js'],
+        dest: 'dist/x-video.complete.js'
       }
     },
 
     copy: {
       main: {
         files: [
-          {expand: true, flatten: true, src: ['dist/x-video.js'], dest: 'demo/js/', filter: 'isFile'},
+          {expand: true, flatten: true, src: ['dist/x-video.complete.js'], dest: 'demo/js/', filter: 'isFile'},
           {expand: true, flatten: true, src: ['dist/x-video.css'], dest: 'demo/css/', filter: 'isFile'}
         ]
       }
@@ -62,10 +71,11 @@ module.exports = function(grunt) {
 
   grunt.loadNpmTasks('grunt-typescript');
   grunt.loadNpmTasks('grunt-contrib-stylus');
+  grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-copy');
   grunt.loadNpmTasks('grunt-gh-pages');
   //grunt.loadNpmTasks('grunt-contrib-watch');
 
-  grunt.registerTask('build', ['typescript', 'stylus', 'copy']);
+  grunt.registerTask('build', ['typescript', 'stylus', 'concat', 'copy']);
   grunt.registerTask('deploy', ['build', 'gh-pages']);
 };

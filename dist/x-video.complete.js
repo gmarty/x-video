@@ -415,14 +415,14 @@
                 this.xtag.timeRemainingDisplay = this.querySelector('.media-controls-time-remaining-display');
                 this.xtag.muteButton = this.querySelector('.media-controls-mute-button');
                 this.xtag.volumeSlider = this.querySelector('.media-controls-volume-slider');
+                this.xtag.menuButton = this.querySelector('.media-controls-menu-button');
                 this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
                 this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
+                this.xtag.xMenus = this.querySelectorAll('x-menu');
+
                 // Initialize the DOM elements.
                 init(xVideo);
-
-                // From there, we need to update `children` to be sure to refer to the inner video children.
-                var children = xtag.toArray(this.xtag.video.children);
 
                 // Listen to the inner video events to maintain the interface in sync with the video state.
                 xtag.addEvents(this.xtag.video, {
@@ -556,6 +556,11 @@
                 xVideo.xtag.rewindButton.removeAttribute('style');
                 xVideo.xtag.forwardButton.removeAttribute('style');
                 }*/
+                // Show the menu button if a inner element is found.
+                if (this.xtag.xMenus.length) {
+                    xVideo.xtag.menuButton.removeAttribute('style');
+                }
+
                 // Show the full screen button if the API is available.
                 if (prefixedRequestFullscreen) {
                     xVideo.xtag.fullscreenButton.removeAttribute('style');
@@ -712,6 +717,12 @@
                 } else {
                     xVideo.muted = false;
                 }
+            },
+            'click:delegate(.media-controls-menu-button)': function (event) {
+                var xVideo = event.currentTarget;
+
+                xVideo.pause();
+                xVideo.xtag.xMenus[0].show();
             },
             'click:delegate(.media-controls-fullscreen-button)': function (event) {
                 // @todo If already on fullscreen mode, click on the button should exit fullscreen.
@@ -1044,6 +1055,76 @@
                 this.videoIndex = videoIndex;
                 this.src = this.playlist[videoIndex].src;
                 this.play();
+            }
+        }
+    });
+})();
+
+///<reference path='declarations/xtag.d.ts'/>
+(function () {
+    'use strict';
+
+    function init(xMenu) {
+        xMenu.xtag.xVideo.playlist.forEach(function (video, index) {
+            var btn = document.createElement('input');
+            btn.type = 'button';
+            btn.dataset.id = index;
+            btn.className = 'btn';
+            btn.value = 'Video ' + (index + 1);
+
+            xMenu.appendChild(btn);
+        });
+
+        xMenu.xtag.initialized = true;
+    }
+
+    xtag.register('x-menu', {
+        lifecycle: {
+            created: function () {
+                var xMenu = this;
+
+                xMenu.xtag.xVideo = null;
+                xMenu.xtag.initialized = false;
+            },
+            inserted: function () {
+                var xMenu = this;
+
+                if (xMenu.parentNode.tagName === 'X-VIDEO') {
+                    xMenu.xtag.xVideo = xMenu.parentNode;
+                }
+            },
+            removed: function () {
+            },
+            attributeChanged: function (attribute, oldValue, newValue) {
+            }
+        },
+        events: {
+            'click:delegate(input[type="button"])': function (event) {
+                var menuBtn = event.target;
+                var xMenu = menuBtn.parentNode;
+                if (!xMenu.xtag.xVideo) {
+                    return;
+                }
+
+                var videoIndex = parseInt(menuBtn.dataset.id, 10);
+
+                xMenu.style.visibility = 'hidden';
+                xMenu.xtag.xVideo.playByIndex(videoIndex);
+            }
+        },
+        accessors: {},
+        methods: {
+            show: function () {
+                var xMenu = this;
+                if (!xMenu.xtag.xVideo) {
+                    return;
+                }
+
+                if (!xMenu.xtag.initialized) {
+                    init(xMenu);
+                }
+
+                xMenu.style.visibility = 'visible';
             }
         }
     });

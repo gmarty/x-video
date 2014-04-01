@@ -9,7 +9,8 @@
       btn.type = 'button';
       btn.dataset.id = index;
       btn.className = 'btn';
-      btn.value = 'Video ' + (index + 1);
+      btn.value = video.label ?
+        video.label : 'Video ' + (index + 1);
 
       xMenu.appendChild(btn);
     });

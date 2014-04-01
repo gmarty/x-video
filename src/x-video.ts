@@ -277,7 +277,8 @@
       // Single video.
       playlist[0] = videoSrcElement(
         xVideo.getAttribute('id'),
-        xVideo.getAttribute('src') // @todo Fix it as it won't work with source elements.
+        xVideo.getAttribute('src'), // @todo Fix it as it won't work with source elements.
+        xVideo.getAttribute('label')
       );
 
       // Doest it have inner source/track elements?
@@ -302,7 +303,8 @@
       videos.forEach(function(video, currentIndex) {
         playlist[currentIndex] = videoSrcElement(
           video.getAttribute('id'),
-          video.currentSrc
+          video.currentSrc,
+          video.getAttribute('label')
         );
 
         var videoTracks = xtag.toArray(video.querySelectorAll('track'));
@@ -405,12 +407,14 @@
    *
    * @param {string} id
    * @param {string} src
+   * @param {string} label
    * @returns {Object}
    */
-  function videoSrcElement(id: string = null, src: string = null) {
+  function videoSrcElement(id: string = null, src: string = null, label: string = null) {
     return {
       id: id,
       src: src,
+      label: label,
       trackRange: [],
       chapterCues: []
     }

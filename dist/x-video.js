@@ -249,7 +249,7 @@
         // Let's process the case where `<x-video>` tag has a src attribute or sub `<source>` elements.
         if (xVideo.hasAttribute('src') || sources.length) {
             // Single video.
-            playlist[0] = videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'));
+            playlist[0] = videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'), xVideo.getAttribute('label'));
 
             // Doest it have inner source/track elements?
             var tracks = xtag.toArray(xVideo.querySelectorAll('x-video > track'));
@@ -271,7 +271,7 @@
             var tracksLength = 0;
 
             videos.forEach(function (video, currentIndex) {
-                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc);
+                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc, video.getAttribute('label'));
 
                 var videoTracks = xtag.toArray(video.querySelectorAll('track'));
                 if (videoTracks.length) {
@@ -372,14 +372,17 @@
     *
     * @param {string} id
     * @param {string} src
+    * @param {string} label
     * @returns {Object}
     */
-    function videoSrcElement(id, src) {
+    function videoSrcElement(id, src, label) {
         if (typeof id === "undefined") { id = null; }
         if (typeof src === "undefined") { src = null; }
+        if (typeof label === "undefined") { label = null; }
         return {
             id: id,
             src: src,
+            label: label,
             trackRange: [],
             chapterCues: []
         };

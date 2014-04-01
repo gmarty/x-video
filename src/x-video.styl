@@ -207,6 +207,28 @@ x-video .media-controls-volume-slider
   border initial
   color inherit
 
+x-video .media-controls-menu-button
+  display flex
+  flex 0 0 auto
+  border none
+  border-image-source initial
+  border-image-slice initial
+  border-image-width initial
+  border-image-outset initial
+  border-image-repeat initial
+  box-sizing border-box
+  -moz-box-sizing border-box
+  width elementSize
+  height elementSize
+  line-height elementSize
+  margin-left - (elementMargin / 2)
+  margin-right elementMargin
+  padding 0
+  background-color initial
+  color inherit
+  background embedurl('svg/menu.svg')
+  background-size elementSize
+
 x-video .media-controls-toggle-closed-captions-button
   /*-webkit-appearance media-toggle-closed-captions-button*/
   display flex

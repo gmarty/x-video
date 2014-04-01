@@ -94,6 +94,7 @@
     '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' +
     '<input type="button" class="media-controls-mute-button">' +
     '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' +
+    '<input type="button" class="media-controls-menu-button" style="display:none;">' +
     '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' +
     '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' +
     '</div>' +

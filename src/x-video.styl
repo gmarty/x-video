@@ -1,6 +1,7 @@
 maxWidth = 800px
 elementSize = 30px
 elementMargin = 4px
+elementColor = #eee
 goldenRatio = 1.618033988749895
 
 x-video
@@ -161,7 +162,7 @@ x-video .media-controls-current-time-display, x-video .media-controls-time-remai
   font-size ((elementSize - elementMargin) / 2)
   font-weight bold
   font-style normal
-  color #FFF
+  color elementColor
   letter-spacing normal
   word-spacing normal
   text-transform none
@@ -270,7 +271,7 @@ x-video input[type='range']::-moz-range-progress
 
 x-video input[type='range']::-moz-range-thumb
   border none
-  background #FFF
+  background elementColor
   width round(elementSize / goldenRatio)
   height round(elementSize / goldenRatio)
   border-radius round(elementSize / goldenRatio / 2)
@@ -282,7 +283,7 @@ x-video input[type='range']::-webkit-slider-runnable-track
 
 x-video input[type='range']::-webkit-slider-thumb
   -webkit-appearance none
-  background #FFF
+  background elementColor
   width round(elementSize / goldenRatio)
   height round(elementSize / goldenRatio)
   border-radius round(elementSize / goldenRatio / 2)

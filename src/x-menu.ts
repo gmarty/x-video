@@ -48,7 +48,7 @@
 
         var videoIndex = parseInt(menuBtn.dataset.id, 10);
 
-        xMenu.style.visibility = 'hidden';
+        xMenu.style.display = 'none';
         xMenu.xtag.xVideo.playByIndex(videoIndex);
       }
     },
@@ -65,7 +65,7 @@
           init(xMenu);
         }
 
-        xMenu.style.visibility = 'visible';
+        xMenu.style.display = 'flex';
       }
     }
   });

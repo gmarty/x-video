@@ -25,7 +25,7 @@ module.exports = function(grunt) {
           urlfunc: 'embedurl'
         },
         files: {
-          'dist/x-video.css': ['src/x-video.styl', 'src/x-menu.styl']
+          'dist/x-video.css': ['src/index.styl']
         }
       }
     },

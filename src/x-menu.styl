@@ -1,18 +1,22 @@
-elementMargin = 4px
-elementColor = #eee
-
 x-menu
   width inherit
   height inherit
-  display block
   position absolute
-  background #000
+  background #333
   z-index 1
   visibility hidden
+  display flex
+  flex-direction column
+  justify-content center
+  align-items center
 
 x-menu input[type="button"]
-  background elementColor
-  color #111
+  background #555
+  color elementColor
+  font-family Arial, Helvetica, sans-serif
+  font-size ((elementSize - elementMargin) / 2)
+  font-weight bold
+  font-style normal
   border none
   margin elementMargin
   padding (elementMargin / 2) (elementMargin * 2)

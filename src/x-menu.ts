@@ -49,26 +49,29 @@
         xMenu.xtag.parent = xMenu.parentNode;
         xMenu.xtag.videoSrcElement = null;
 
-        if (!xMenu.hasAttribute('for')) {
-          xMenu.xtag.mode = MENU_MODES.GLOBAL;
-        } else {
-          xMenu.xtag.mode = MENU_MODES.LOCAL;
+        // @todo Emit an `init` event in x-video and listen it here.
+        setTimeout(function() {
+          if (!xMenu.hasAttribute('for')) {
+            xMenu.xtag.mode = MENU_MODES.GLOBAL;
+          } else {
+            xMenu.xtag.mode = MENU_MODES.LOCAL;
 
-          // Get a reference to parent playlist or chapterCues.
-          var targetId = xMenu.getAttribute('for');
-          var targetIndex: number = null;
-          xMenu.xtag.parent.playlist.some(function(video, index) {
-            if (video.id === targetId) {
-              targetIndex = index;
-              return true;
+            // Get a reference to parent playlist or chapterCues.
+            var targetId = xMenu.getAttribute('for');
+            var targetIndex: number = null;
+            xMenu.xtag.parent.playlist.some(function(video, index) {
+              if (video.id === targetId) {
+                targetIndex = index;
+                return true;
+              }
+              return false;
+            });
+
+            if (targetIndex !== null) {
+              xMenu.xtag.videoSrcElement = xMenu.xtag.parent.playlist[targetIndex];
             }
-            return false;
-          });
-
-          if (targetIndex !== null) {
-            xMenu.xtag.videoSrcElement = xMenu.xtag.parent.playlist[targetIndex];
           }
-        }
+        }, 16);
       },
       inserted: function() {
       },

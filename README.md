@@ -90,3 +90,18 @@ var xVideo = document.querySelector('x-video');
 xVideo.playByIndex(2); // Play the 3rd video in the list.
 </script>
 ```
+
+### playChapter(index)
+
+Use `playChapter()` method to play a specific chapter in the current video:
+```html
+<x-video>
+  <video src="video.webm">
+    <track kind="chapters" src="vtt/chapters.vtt" srclang="en" default>
+  </video>
+</x-video>
+<script>
+var xVideo = document.querySelector('x-video');
+xVideo.playChapter(2); // Start playback from the 3rd chapter.
+</script>
+```

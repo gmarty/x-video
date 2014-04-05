@@ -270,6 +270,7 @@
     var playlist = [];
     var sources = xtag.toArray(xVideo.querySelectorAll('x-video > source'));
     var tracks = [];
+    var menus = xtag.toArray(xVideo.querySelectorAll('x-menu'));
     var attributes = {};
 
     // Let's process the case where `<x-video>` tag has a src attribute or sub `<source>` elements.
@@ -291,7 +292,7 @@
         });
       }
 
-      // Remove all sources.
+      // Remove all source elements.
       sources.forEach(function(source) {
         xVideo.removeChild(source);
       });
@@ -396,6 +397,32 @@
       innerVideo.appendChild(track);
     });
 
+    menus.forEach(function(menu) {
+      if (!menu.hasAttribute('for')) {
+        // Global menu.
+        xVideo.menus.push(menu);
+      } else {
+        // Local menu.
+        var targetId = menu.getAttribute('for');
+        var targetIndex = null;
+        playlist.some(function(video, index) {
+          if (video.id === targetId) {
+            targetIndex = index;
+            return true;
+          }
+          return false;
+        });
+
+        if (targetIndex === null) {
+          // We can't do much here. Just disregard this tag.
+          return;
+        }
+
+        playlist[targetIndex].menus.push(menu);
+        xVideo.appendChild(menu);
+      }
+    });
+
     xVideo.xtag.mediaControls.appendChild(innerVideo);
     //xVideo.xtag.mediaControls.insertBefore(xVideo.xtag.video, xVideo.xtag.mediaControlsEnclosure);
 
@@ -416,7 +443,8 @@
       src: src,
       label: label,
       trackRange: [],
-      chapterCues: []
+      chapterCues: [],
+      menus: []
     }
   }
 
@@ -455,7 +483,8 @@
         this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
         this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
-        this.xtag.xMenus = this.querySelectorAll('x-menu');
+        // Hold the list
+        this.menus = [];
 
         // Initialize the DOM elements.
         init(xVideo);
@@ -595,8 +624,11 @@
          xVideo.xtag.forwardButton.removeAttribute('style');
          }*/
 
-        // Show the menu button if a inner element is found.
-        if (this.xtag.xMenus.length) {
+        // Show the menu button if there is at least one menu.
+        var hasMenu = this.menus.length || xVideo.playlist.some(function(video) {
+          return !!video.menus.length;
+        });
+        if (hasMenu) {
           xVideo.xtag.menuButton.removeAttribute('style');
         }
 
@@ -754,18 +786,21 @@
       'input:delegate(.media-controls-volume-slider)': function(event) {
         var xVideo = event.currentTarget;
         xVideo.volume = xVideo.xtag.volumeSlider.value;
-        if (xVideo.volume === 0) {
-          xVideo.muted = true;
-        } else {
-          xVideo.muted = false;
-        }
+        xVideo.muted = (xVideo.volume === 0);
       },
 
       'click:delegate(.media-controls-menu-button)': function(event) {
         var xVideo = event.currentTarget;
 
-        xVideo.pause();
-        xVideo.xtag.xMenus[0].show();
+        if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
+          // Does this video have a local menu?
+          xVideo.pause();
+          xVideo.playlist[xVideo.videoIndex].menus[0].show();
+        } else if (xVideo.menus[0]) {
+          // Otherwise, we show the global menu.
+          xVideo.pause();
+          xVideo.menus[0].show();
+        }
       },
 
       'click:delegate(.media-controls-fullscreen-button)': function(event) {
@@ -1086,6 +1121,11 @@
       },
 
       // New methods.
+      /**
+       * Play the video specified by its order in the playlist.
+       *
+       * @param {number} videoIndex
+       */
       playByIndex: function(videoIndex: number) {
         if (typeof videoIndex !== 'number') {
           console.error('Invalid video number');
@@ -1098,6 +1138,25 @@
 
         this.videoIndex = videoIndex;
         this.src = this.playlist[videoIndex].src;
+        this.play();
+      },
+
+      /**
+       * Play the specified chapter in the current video on the playlist.
+       *
+       * @param {number} chapterIndex
+       */
+      playChapter: function(chapterIndex: number) {
+        if (typeof chapterIndex !== 'number') {
+          console.error('Invalid chapter number');
+          return;
+        }
+        if (chapterIndex < 0 || chapterIndex >= this.playlist[this.videoIndex].chapterCues.length) {
+          console.error('Chapter requested out of bound');
+          return;
+        }
+
+        this.currentTime = this.playlist[this.videoIndex].chapterCues[chapterIndex].startTime;
         this.play();
       }
     }

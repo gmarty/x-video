@@ -244,6 +244,7 @@
         var playlist = [];
         var sources = xtag.toArray(xVideo.querySelectorAll('x-video > source'));
         var tracks = [];
+        var menus = xtag.toArray(xVideo.querySelectorAll('x-menu'));
         var attributes = {};
 
         // Let's process the case where `<x-video>` tag has a src attribute or sub `<source>` elements.
@@ -261,7 +262,7 @@
                 });
             }
 
-            // Remove all sources.
+            // Remove all source elements.
             sources.forEach(function (source) {
                 xVideo.removeChild(source);
             });
@@ -361,6 +362,32 @@
             innerVideo.appendChild(track);
         });
 
+        menus.forEach(function (menu) {
+            if (!menu.hasAttribute('for')) {
+                // Global menu.
+                xVideo.menus.push(menu);
+            } else {
+                // Local menu.
+                var targetId = menu.getAttribute('for');
+                var targetIndex = null;
+                playlist.some(function (video, index) {
+                    if (video.id === targetId) {
+                        targetIndex = index;
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (targetIndex === null) {
+                    // We can't do much here. Just disregard this tag.
+                    return;
+                }
+
+                playlist[targetIndex].menus.push(menu);
+                xVideo.appendChild(menu);
+            }
+        });
+
         xVideo.xtag.mediaControls.appendChild(innerVideo);
 
         //xVideo.xtag.mediaControls.insertBefore(xVideo.xtag.video, xVideo.xtag.mediaControlsEnclosure);
@@ -384,7 +411,8 @@
             src: src,
             label: label,
             trackRange: [],
-            chapterCues: []
+            chapterCues: [],
+            menus: []
         };
     }
 
@@ -422,7 +450,8 @@
                 this.xtag.closedCaptionsButton = this.querySelector('.media-controls-closed-captions-button');
                 this.xtag.fullscreenButton = this.querySelector('.media-controls-fullscreen-button');
 
-                this.xtag.xMenus = this.querySelectorAll('x-menu');
+                // Hold the list
+                this.menus = [];
 
                 // Initialize the DOM elements.
                 init(xVideo);
@@ -559,8 +588,11 @@
                 xVideo.xtag.rewindButton.removeAttribute('style');
                 xVideo.xtag.forwardButton.removeAttribute('style');
                 }*/
-                // Show the menu button if a inner element is found.
-                if (this.xtag.xMenus.length) {
+                // Show the menu button if there is at least one menu.
+                var hasMenu = this.menus.length || xVideo.playlist.some(function (video) {
+                    return !!video.menus.length;
+                });
+                if (hasMenu) {
                     xVideo.xtag.menuButton.removeAttribute('style');
                 }
 
@@ -715,17 +747,20 @@
             'input:delegate(.media-controls-volume-slider)': function (event) {
                 var xVideo = event.currentTarget;
                 xVideo.volume = xVideo.xtag.volumeSlider.value;
-                if (xVideo.volume === 0) {
-                    xVideo.muted = true;
-                } else {
-                    xVideo.muted = false;
-                }
+                xVideo.muted = (xVideo.volume === 0);
             },
             'click:delegate(.media-controls-menu-button)': function (event) {
                 var xVideo = event.currentTarget;
 
-                xVideo.pause();
-                xVideo.xtag.xMenus[0].show();
+                if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
+                    // Does this video have a local menu?
+                    xVideo.pause();
+                    xVideo.playlist[xVideo.videoIndex].menus[0].show();
+                } else if (xVideo.menus[0]) {
+                    // Otherwise, we show the global menu.
+                    xVideo.pause();
+                    xVideo.menus[0].show();
+                }
             },
             'click:delegate(.media-controls-fullscreen-button)': function (event) {
                 // @todo If already on fullscreen mode, click on the button should exit fullscreen.
@@ -1045,6 +1080,11 @@
                 return this.xtag.video.mozGetMetadata();
             },
             // New methods.
+            /**
+            * Play the video specified by its order in the playlist.
+            *
+            * @param {number} videoIndex
+            */
             playByIndex: function (videoIndex) {
                 if (typeof videoIndex !== 'number') {
                     console.error('Invalid video number');
@@ -1058,6 +1098,24 @@
                 this.videoIndex = videoIndex;
                 this.src = this.playlist[videoIndex].src;
                 this.play();
+            },
+            /**
+            * Play the specified chapter in the current video on the playlist.
+            *
+            * @param {number} chapterIndex
+            */
+            playChapter: function (chapterIndex) {
+                if (typeof chapterIndex !== 'number') {
+                    console.error('Invalid chapter number');
+                    return;
+                }
+                if (chapterIndex < 0 || chapterIndex >= this.playlist[this.videoIndex].chapterCues.length) {
+                    console.error('Chapter requested out of bound');
+                    return;
+                }
+
+                this.currentTime = this.playlist[this.videoIndex].chapterCues[chapterIndex].startTime;
+                this.play();
             }
         }
     });
@@ -1067,16 +1125,37 @@
 (function () {
     'use strict';
 
-    function init(xMenu) {
-        xMenu.xtag.xVideo.playlist.forEach(function (video, index) {
-            var btn = document.createElement('input');
-            btn.type = 'button';
-            btn.dataset.id = index;
-            btn.className = 'btn';
-            btn.value = video.label ? video.label : 'Video ' + (index + 1);
+    /** @const */ var MENU_MODES = {
+        GLOBAL: 0,
+        LOCAL: 1
+    };
 
-            xMenu.appendChild(btn);
-        });
+    function init(xMenu) {
+        if (xMenu.xtag.mode === null) {
+            return;
+        }
+
+        if (xMenu.xtag.mode === MENU_MODES.GLOBAL) {
+            xMenu.xtag.parent.playlist.forEach(function (video, index) {
+                var btn = document.createElement('input');
+                btn.type = 'button';
+                btn.dataset.id = index;
+                btn.className = 'btn';
+                btn.value = video.label ? video.label : 'Video ' + (index + 1);
+
+                xMenu.appendChild(btn);
+            });
+        } else if (xMenu.xtag.mode === MENU_MODES.LOCAL) {
+            xMenu.xtag.videoSrcElement.chapterCues.forEach(function (chapter, index) {
+                var btn = document.createElement('input');
+                btn.type = 'button';
+                btn.dataset.id = index;
+                btn.className = 'btn';
+                btn.value = chapter.text ? chapter.text : 'Chapter ' + (index + 1);
+
+                xMenu.appendChild(btn);
+            });
+        }
 
         xMenu.xtag.initialized = true;
     }
@@ -1086,15 +1165,32 @@
             created: function () {
                 var xMenu = this;
 
-                xMenu.xtag.xVideo = null;
-                xMenu.xtag.initialized = false;
+                xMenu.xtag.mode = null;
+                xMenu.xtag.parent = xMenu.parentNode;
+                xMenu.xtag.videoSrcElement = null;
+
+                if (!xMenu.hasAttribute('for')) {
+                    xMenu.xtag.mode = MENU_MODES.GLOBAL;
+                } else {
+                    xMenu.xtag.mode = MENU_MODES.LOCAL;
+
+                    // Get a reference to parent playlist or chapterCues.
+                    var targetId = xMenu.getAttribute('for');
+                    var targetIndex = null;
+                    xMenu.xtag.parent.playlist.some(function (video, index) {
+                        if (video.id === targetId) {
+                            targetIndex = index;
+                            return true;
+                        }
+                        return false;
+                    });
+
+                    if (targetIndex !== null) {
+                        xMenu.xtag.videoSrcElement = xMenu.xtag.parent.playlist[targetIndex];
+                    }
+                }
             },
             inserted: function () {
-                var xMenu = this;
-
-                if (xMenu.parentNode.tagName === 'X-VIDEO') {
-                    xMenu.xtag.xVideo = xMenu.parentNode;
-                }
             },
             removed: function () {
             },
@@ -1105,21 +1201,26 @@
             'click:delegate(input[type="button"])': function (event) {
                 var menuBtn = event.target;
                 var xMenu = menuBtn.parentNode;
-                if (!xMenu.xtag.xVideo) {
+                if (!xMenu.xtag.parent) {
                     return;
                 }
 
-                var videoIndex = parseInt(menuBtn.dataset.id, 10);
+                if (xMenu.xtag.mode === MENU_MODES.GLOBAL) {
+                    var videoIndex = parseInt(menuBtn.dataset.id, 10);
+                    xMenu.xtag.parent.playByIndex(videoIndex);
+                } else if (xMenu.xtag.mode === MENU_MODES.LOCAL) {
+                    var chapterIndex = parseInt(menuBtn.dataset.id, 10);
+                    xMenu.xtag.parent.playChapter(chapterIndex);
+                }
 
                 xMenu.style.display = 'none';
-                xMenu.xtag.xVideo.playByIndex(videoIndex);
             }
         },
         accessors: {},
         methods: {
             show: function () {
                 var xMenu = this;
-                if (!xMenu.xtag.xVideo) {
+                if (!xMenu.xtag.parent) {
                     return;
                 }
 

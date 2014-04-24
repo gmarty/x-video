@@ -81,7 +81,7 @@
         return false;
     });
 
-    var template = xtag.createFragment('<div class="media-controls">' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' + '<input type="button" class="media-controls-rewind-button" style="display:none;">' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" style="display:none;">' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" style="display:none;">0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-menu-button" style="display:none;">' + '<input type="button" class="media-controls-toggle-closed-captions-button" style="display:none;">' + '<input type="button" class="media-controls-fullscreen-button" style="display:none;">' + '</div>' + '</div>' + '</div>');
+    var template = xtag.createFragment('<div class="media-controls">' + '<div class="media-controls-enclosure">' + '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' + '<input type="button" class="media-controls-rewind-button" hidden>' + '<input type="button" class="media-controls-play-button">' + '<input type="button" class="media-controls-forward-button" hidden>' + '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' + '<div class="media-controls-current-time-display">0:00</div>' + '<div class="media-controls-time-remaining-display" hidden>0:00</div>' + '<input type="button" class="media-controls-mute-button">' + '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' + '<input type="button" class="media-controls-menu-button" hidden>' + '<input type="button" class="media-controls-toggle-closed-captions-button" hidden>' + '<input type="button" class="media-controls-fullscreen-button" hidden>' + '</div>' + '</div>' + '</div>');
 
     /**
     * Transform a time in second to a human readable format.
@@ -527,8 +527,8 @@
 
                 // We show prev/next buttons on playlists.
                 if (xVideo.playlist.length > 1) {
-                    xVideo.xtag.rewindButton.removeAttribute('style');
-                    xVideo.xtag.forwardButton.removeAttribute('style');
+                    xVideo.xtag.rewindButton.removeAttribute('hidden');
+                    xVideo.xtag.forwardButton.removeAttribute('hidden');
                 }
 
                 // Build a list of all valid track elements.
@@ -585,20 +585,20 @@
                 return;
                 }
                 
-                xVideo.xtag.rewindButton.removeAttribute('style');
-                xVideo.xtag.forwardButton.removeAttribute('style');
+                xVideo.xtag.rewindButton.removeAttribute('hidden');
+                xVideo.xtag.forwardButton.removeAttribute('hidden');
                 }*/
                 // Show the menu button if there is at least one menu.
                 var hasMenu = this.menus.length || xVideo.playlist.some(function (video) {
                     return !!video.menus.length;
                 });
                 if (hasMenu) {
-                    xVideo.xtag.menuButton.removeAttribute('style');
+                    xVideo.xtag.menuButton.removeAttribute('hidden');
                 }
 
                 // Show the full screen button if the API is available.
                 if (prefixedRequestFullscreen) {
-                    xVideo.xtag.fullscreenButton.removeAttribute('style');
+                    xVideo.xtag.fullscreenButton.removeAttribute('hidden');
                 }
             },
             inserted: function () {
@@ -906,10 +906,10 @@
                 },
                 set: function (value) {
                     if (value) {
-                        this.xtag.mediaControlsPanel.style.removeProperty('display');
+                        this.xtag.mediaControlsPanel.removeAttribute('hidden');
                         this.xtag.mediaControlsPanel.style.opacity = 1;
                     } else {
-                        this.xtag.mediaControlsPanel.style.display = 'none';
+                        this.xtag.mediaControlsPanel.setAttribute('hidden', '');
                         this.xtag.mediaControlsPanel.style.opacity = 0;
                     }
                 }

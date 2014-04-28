@@ -69,9 +69,9 @@
     var prefixedRequestFullscreen = null;
     [
         'requestFullscreen',
-        'msRequestFullscreen',
         'mozRequestFullScreen',
         'webkitRequestFullscreen',
+        'msRequestFullscreen',
         'requestFullScreen'
     ].some(function (prefix) {
         if (document.body[prefix]) {
@@ -238,7 +238,7 @@
     * Initialize the x-video element by gathering existing DOM elements and attributes and creating
     * an inner video element.
     *
-    * @param {HTMLVideoElement} xVideo
+    * @param {HTMLUnknownElement} xVideo
     */
     function init(xVideo) {
         var playlist = [];
@@ -285,14 +285,16 @@
                 xVideo.removeChild(video);
             });
 
-            // Copy HTML attributes of the first <video> tag on <x-video> tag.
-            VIDEO_ATTRIBUTES.forEach(function (attribute) {
-                if (videos[0].hasAttribute(attribute)) {
-                    attributes[attribute] = videos[0].getAttribute(attribute);
+            if (videos[0]) {
+                // Copy HTML attributes of the first <video> tag on <x-video> tag.
+                VIDEO_ATTRIBUTES.forEach(function (attribute) {
+                    if (videos[0].hasAttribute(attribute)) {
+                        attributes[attribute] = videos[0].getAttribute(attribute);
+                    }
+                });
+                if (videos[0].hasAttribute('controls')) {
+                    xVideo.setAttribute('controls', '');
                 }
-            });
-            if (videos[0].hasAttribute('controls')) {
-                xVideo.setAttribute('controls', '');
             }
         }
 
@@ -320,7 +322,7 @@
             }, false);
         });
 
-        if (playlist[0].src !== null) {
+        if (playlist[0] && playlist[0].src !== null) {
             innerVideo.src = playlist[0].src;
         }
 
@@ -341,6 +343,10 @@
                     var textTrack = innerVideo.textTracks[trackIndex];
                     if (textTrack.kind === 'chapters' && (textTrack.mode === 'hidden' || textTrack.mode === 'showing')) {
                         obj.chapterCues = xtag.toArray(textTrack.cues);
+
+                        xVideo.xtag.rewindButton.removeAttribute('hidden');
+                        xVideo.xtag.forwardButton.removeAttribute('hidden');
+
                         return true;
                     }
                     return false;
@@ -538,7 +544,7 @@
                 });
                 
                 // Then, select the track element with a default attribute...
-                var activeChapterTrack = null;
+                var activeChapterTrack: number = null;
                 chapterTracks.some(function(chapterTrack) {
                 if (chapterTrack.hasAttribute('default')) {
                 activeChapterTrack = chapterTrack;
@@ -752,13 +758,13 @@
             'click:delegate(.media-controls-menu-button)': function (event) {
                 var xVideo = event.currentTarget;
 
+                xVideo.pause();
+
                 if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
                     // Does this video have a local menu?
-                    xVideo.pause();
                     xVideo.playlist[xVideo.videoIndex].menus[0].show();
                 } else if (xVideo.menus[0]) {
                     // Otherwise, we show the global menu.
-                    xVideo.pause();
                     xVideo.menus[0].show();
                 }
             },
@@ -996,7 +1002,9 @@
                     return this.xtag.video.src;
                 },
                 set: function (value) {
-                    this.playlist[this.videoIndex].src = value;
+                    if (this.playlist[this.videoIndex]) {
+                        this.playlist[this.videoIndex].src = value;
+                    }
                     this.xtag.video.src = value;
                 }
             },

@@ -71,10 +71,10 @@
   var prefixedRequestFullscreen: string = null;
   [
     'requestFullscreen',
-    'msRequestFullscreen',
     'mozRequestFullScreen',
     'webkitRequestFullscreen',
-    'requestFullScreen', // Just in case.
+    'msRequestFullscreen',
+    'requestFullScreen' // Just in case.
   ].some(function(prefix: string) {
       if (document.body[prefix]) {
         prefixedRequestFullscreen = prefix;
@@ -84,22 +84,22 @@
     });
 
   var template = xtag.createFragment('<div class="media-controls">' +
-    '<div class="media-controls-enclosure">' +
-    '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' +
-    '<input type="button" class="media-controls-rewind-button" hidden>' +
-    '<input type="button" class="media-controls-play-button">' +
-    '<input type="button" class="media-controls-forward-button" hidden>' +
-    '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' +
-    '<div class="media-controls-current-time-display">0:00</div>' +
-    '<div class="media-controls-time-remaining-display" hidden>0:00</div>' +
-    '<input type="button" class="media-controls-mute-button">' +
-    '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' +
-    '<input type="button" class="media-controls-menu-button" hidden>' +
-    '<input type="button" class="media-controls-toggle-closed-captions-button" hidden>' +
-    '<input type="button" class="media-controls-fullscreen-button" hidden>' +
-    '</div>' +
-    '</div>' +
-    '</div>'
+      '<div class="media-controls-enclosure">' +
+      '<div class="media-controls-panel" style="transition:opacity 0.3s;-webkit-transition:opacity 0.3s;opacity:1;">' +
+      '<input type="button" class="media-controls-rewind-button" hidden>' +
+      '<input type="button" class="media-controls-play-button">' +
+      '<input type="button" class="media-controls-forward-button" hidden>' +
+      '<input type="range" value="0" step="any" max="0" class="media-controls-timeline">' +
+      '<div class="media-controls-current-time-display">0:00</div>' +
+      '<div class="media-controls-time-remaining-display" hidden>0:00</div>' +
+      '<input type="button" class="media-controls-mute-button">' +
+      '<input type="range" value="1" step="any" max="1" class="media-controls-volume-slider">' +
+      '<input type="button" class="media-controls-menu-button" hidden>' +
+      '<input type="button" class="media-controls-toggle-closed-captions-button" hidden>' +
+      '<input type="button" class="media-controls-fullscreen-button" hidden>' +
+      '</div>' +
+      '</div>' +
+      '</div>'
   );
 
   /**
@@ -264,9 +264,9 @@
    * Initialize the x-video element by gathering existing DOM elements and attributes and creating
    * an inner video element.
    *
-   * @param {HTMLVideoElement} xVideo
+   * @param {HTMLUnknownElement} xVideo
    */
-  function init(xVideo: HTMLVideoElement) {
+  function init(xVideo: HTMLUnknownElement) {
     var playlist = [];
     var sources = xtag.toArray(xVideo.querySelectorAll('x-video > source'));
     var tracks = [];
@@ -319,14 +319,16 @@
         xVideo.removeChild(video);
       });
 
-      // Copy HTML attributes of the first <video> tag on <x-video> tag.
-      VIDEO_ATTRIBUTES.forEach(function(attribute) {
-        if (videos[0].hasAttribute(attribute)) {
-          attributes[attribute] = videos[0].getAttribute(attribute);
+      if (videos[0]) {
+        // Copy HTML attributes of the first <video> tag on <x-video> tag.
+        VIDEO_ATTRIBUTES.forEach(function(attribute) {
+          if (videos[0].hasAttribute(attribute)) {
+            attributes[attribute] = videos[0].getAttribute(attribute);
+          }
+        });
+        if (videos[0].hasAttribute('controls')) {
+          xVideo.setAttribute('controls', '');
         }
-      });
-      if (videos[0].hasAttribute('controls')) {
-        xVideo.setAttribute('controls', '');
       }
     }
 
@@ -355,7 +357,7 @@
       }, false);
     });
 
-    if (playlist[0].src !== null) {
+    if (playlist[0] && playlist[0].src !== null) {
       innerVideo.src = playlist[0].src;
     }
 
@@ -377,6 +379,10 @@
           if (textTrack.kind === 'chapters' &&
             (textTrack.mode === 'hidden' || textTrack.mode === 'showing')) {
             obj.chapterCues = xtag.toArray(textTrack.cues);
+
+            xVideo.xtag.rewindButton.removeAttribute('hidden');
+            xVideo.xtag.forwardButton.removeAttribute('hidden');
+
             return true;
           }
           return false;
@@ -404,7 +410,7 @@
       } else {
         // Local menu.
         var targetId = menu.getAttribute('for');
-        var targetIndex = null;
+        var targetIndex: number = null;
         playlist.some(function(video, index) {
           if (video.id === targetId) {
             targetIndex = index;
@@ -571,7 +577,7 @@
          });
 
          // Then, select the track element with a default attribute...
-         var activeChapterTrack = null;
+         var activeChapterTrack: number = null;
          chapterTracks.some(function(chapterTrack) {
          if (chapterTrack.hasAttribute('default')) {
          activeChapterTrack = chapterTrack;
@@ -792,13 +798,13 @@
       'click:delegate(.media-controls-menu-button)': function(event) {
         var xVideo = event.currentTarget;
 
+        xVideo.pause();
+
         if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
           // Does this video have a local menu?
-          xVideo.pause();
           xVideo.playlist[xVideo.videoIndex].menus[0].show();
         } else if (xVideo.menus[0]) {
           // Otherwise, we show the global menu.
-          xVideo.pause();
           xVideo.menus[0].show();
         }
       },
@@ -1038,7 +1044,9 @@
           return this.xtag.video.src;
         },
         set: function(value) {
-          this.playlist[this.videoIndex].src = value;
+          if (this.playlist[this.videoIndex]) {
+            this.playlist[this.videoIndex].src = value;
+          }
           this.xtag.video.src = value;
         }
       },

@@ -1,0 +1,3 @@
+--require chai
+--ui tdd
+--reporter spec

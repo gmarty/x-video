@@ -1,3 +1,10 @@
+background-sprite(svgFileName = '')
+  background-image embedurl(svgFileName)
+  background-color transparent
+  background-size round(elementSize / goldenRatio)
+  background-repeat no-repeat
+  background-position center
+
 x-video
   object-fit contain
   position relative
@@ -70,14 +77,10 @@ x-video .media-controls-play-button
   margin-left elementMargin
   margin-right elementMargin
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/play.svg')
-  background-size elementSize
+  background-sprite('svg/play.svg')
 
 x-video .media-controls-play-button.paused
-  background embedurl('svg/pause.svg')
-  background-size elementSize
+  background-sprite('svg/pause.svg')
 
 x-video .media-controls-rewind-button
   display flex
@@ -96,10 +99,7 @@ x-video .media-controls-rewind-button
   margin-left elementMargin
   margin-right elementMargin
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/rewind.svg')
-  background-size elementSize
+  background-sprite('svg/rewind.svg')
 
 x-video .media-controls-forward-button
   display flex
@@ -118,10 +118,7 @@ x-video .media-controls-forward-button
   margin-left elementMargin
   margin-right elementMargin
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/forward.svg')
-  background-size elementSize
+  background-sprite('svg/forward.svg')
 
 x-video .media-controls-timeline
   display flex
@@ -130,7 +127,6 @@ x-video .media-controls-timeline
   padding 0
   min-width 25px
   border initial
-  color inherit
 
 x-video .media-controls-current-time-display, x-video .media-controls-time-remaining-display
   -moz-user-select none
@@ -177,14 +173,10 @@ x-video .media-controls-mute-button
   line-height elementSize
   margin 0 elementMargin 0 0
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/audio.svg')
-  background-size elementSize
+  background-sprite('svg/audio.svg')
 
 x-video .media-controls-mute-button.muted
-  background embedurl('svg/audio-muted.svg')
-  background-size elementSize
+  background-sprite('svg/audio-muted.svg')
 
 x-video .media-controls-volume-slider
   display flex
@@ -194,7 +186,6 @@ x-video .media-controls-volume-slider
   padding 0
   min-width 15px
   border initial
-  color inherit
 
 x-video .media-controls-menu-button
   display flex
@@ -213,10 +204,7 @@ x-video .media-controls-menu-button
   margin-left - (elementMargin / 2)
   margin-right elementMargin
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/menu.svg')
-  background-size elementSize
+  background-sprite('svg/menu.svg')
 
 x-video .media-controls-toggle-closed-captions-button
   display flex
@@ -235,10 +223,7 @@ x-video .media-controls-toggle-closed-captions-button
   margin-left - (elementMargin / 2)
   margin-right elementMargin
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/closed-captions.svg')
-  background-size elementSize
+  background-sprite('svg/closed-captions.svg')
 
 x-video .media-controls-fullscreen-button
   display flex
@@ -257,10 +242,7 @@ x-video .media-controls-fullscreen-button
   margin-left - (elementMargin / 2)
   margin-right elementMargin
   padding 0
-  background-color initial
-  color inherit
-  background embedurl('svg/fullscreen.svg')
-  background-size elementSize
+  background-sprite('svg/fullscreen.svg')
 
 x-video input[type='range']
   -webkit-appearance none

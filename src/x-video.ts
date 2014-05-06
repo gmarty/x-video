@@ -304,7 +304,10 @@
       videos.forEach(function(video, currentIndex) {
         playlist[currentIndex] = videoSrcElement(
           video.getAttribute('id'),
-          video.currentSrc,
+          // Sometime the video is not loaded, so we can't rely on .currentSrc,
+          // so we use .src, but that wouldn't work with <source> elements.
+          // @todo Find a workaround that work with <source> elements too.
+          video.currentSrc || video.src, // @todo Fix me!
           video.getAttribute('label')
         );
 

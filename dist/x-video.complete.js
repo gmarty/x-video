@@ -272,7 +272,7 @@
             var tracksLength = 0;
 
             videos.forEach(function (video, currentIndex) {
-                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc, video.getAttribute('label'));
+                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc || video.src, video.getAttribute('label'));
 
                 var videoTracks = xtag.toArray(video.querySelectorAll('track'));
                 if (videoTracks.length) {

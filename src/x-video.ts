@@ -499,40 +499,61 @@
         init(xVideo);
 
         // Listen to the inner video events to maintain the interface in sync with the video state.
-        xtag.addEvents(this.xtag.video, {
-          'play': function(event) {
-            xtag.addClass(xVideo.xtag.playButton, 'paused');
-          },
-          'pause': function(event) {
-            xtag.removeClass(xVideo.xtag.playButton, 'paused');
-          },
-          'durationchange': function(event) {
-            xVideo.xtag.timeline.setAttribute('max', xVideo.xtag.video.duration);
-          },
-          'timeupdate': function(event) {
-            xVideo.xtag.timeline.value = this.currentTime;
-            xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(this.currentTime);
-          },
-          'volumechange': function(event) {
-            if (xVideo.xtag.video.muted) {
-              xtag.addClass(xVideo.xtag.muteButton, 'muted');
-            } else {
-              xtag.removeClass(xVideo.xtag.muteButton, 'muted');
-            }
-            xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
-          },
-          'ended': function(event) {
-            // At the end of the video, update the src to the next in the playlist, if any.
-            if (xVideo.playlist.length > 1 && xVideo.videoIndex < xVideo.playlist.length - 1) {
-              xVideo.videoIndex++;
+        xVideo.xtag.evt = {};
+        [
+          'play',
+          'pause',
+          'durationchange',
+          'timeupdate',
+          'volumechange',
+          'ended'
+        ].forEach(function(eventType) {
+            xVideo.xtag.video.addEventListener(eventType, xVideo.xtag.evt);
+          });
 
-              // Update the src attribute.
-              xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+        xVideo.xtag.evt.handleEvent = function(event) {
+          var target = event.target;
 
-              xtag.fireEvent(xVideo, 'videochange');
-            }
+          switch (event.type) {
+            case 'play':
+              xtag.addClass(xVideo.xtag.playButton, 'paused');
+              break;
+
+            case 'pause':
+              xtag.removeClass(xVideo.xtag.playButton, 'paused');
+              break;
+
+            case 'durationchange':
+              xVideo.xtag.timeline.setAttribute('max', target.duration);
+              break;
+
+            case 'timeupdate':
+              xVideo.xtag.timeline.value = target.currentTime;
+              xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(target.currentTime);
+              break;
+
+            case 'volumechange':
+              if (target.muted) {
+                xtag.addClass(xVideo.xtag.muteButton, 'muted');
+              } else {
+                xtag.removeClass(xVideo.xtag.muteButton, 'muted');
+              }
+              xVideo.xtag.volumeSlider.value = target.volume;
+              break;
+
+            case 'ended':
+              // At the end of the video, update the src to the next in the playlist, if any.
+              if (xVideo.playlist.length > 1 && xVideo.videoIndex < xVideo.playlist.length - 1) {
+                xVideo.videoIndex++;
+
+                // Update the src attribute.
+                xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+
+                xtag.fireEvent(xVideo, 'videochange');
+              }
+              break;
           }
-        });
+        };
 
         // Show the media controls bar if the controls attribute is present.
         this.controls = this.hasAttribute('controls');

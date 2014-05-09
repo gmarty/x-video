@@ -242,37 +242,60 @@
     */
     function init(xVideo) {
         var playlist = [];
-        var sources = xtag.toArray(xVideo.querySelectorAll('x-video > source'));
+        var videos = xtag.toArray(xVideo.querySelectorAll('x-video > video'));
         var tracks = [];
         var menus = xtag.toArray(xVideo.querySelectorAll('x-menu'));
-        var attributes = {};
 
+        //var attributes = {};
         // Let's process the case where `<x-video>` tag has a src attribute or sub `<source>` elements.
-        if (xVideo.hasAttribute('src') || sources.length) {
+        if (!videos.length) {
             // Single video.
-            playlist[0] = videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'), xVideo.getAttribute('label'));
+            // Create the inner video element.
+            var innerVideo = document.createElement('video');
+
+            playlist[0] = videoSrcElement(xVideo.getAttribute('id'), xVideo.getAttribute('src'), innerVideo, xVideo.getAttribute('label'));
 
             // Doest it have inner source/track elements?
-            var tracks = xtag.toArray(xVideo.querySelectorAll('x-video > track'));
+            tracks = xtag.toArray(xVideo.querySelectorAll('x-video > track'));
             if (tracks.length) {
                 playlist[0].trackRange = range(0, tracks.length);
-
-                tracks.forEach(function (track) {
-                    xVideo.removeChild(track);
-                });
             }
 
-            // Remove all source elements.
+            // Move all source elements.
+            var sources = xtag.toArray(xVideo.querySelectorAll('x-video > source'));
             sources.forEach(function (source) {
-                xVideo.removeChild(source);
+                innerVideo.appendChild(source);
             });
+
+            tracks.forEach(function (source) {
+                innerVideo.appendChild(source);
+            });
+
+            // We replicate the attribute on both <x-video> and the inner video elements.
+            VIDEO_ATTRIBUTES.forEach(function (attr) {
+                if (xVideo.hasAttribute(attr)) {
+                    innerVideo.setAttribute(attr, xVideo.getAttribute(attr));
+                }
+            });
+
+            // Propagate events of inner video element to x-video element.
+            VIDEO_EVENT_TYPES.forEach(function (eventType) {
+                innerVideo.addEventListener(eventType, function (event) {
+                    xtag.fireEvent(xVideo, eventType);
+                }, false);
+            });
+
+            xVideo.xtag.mediaControls.appendChild(innerVideo);
+
+            videos = [innerVideo];
         } else {
             // Multiple videos playlist.
-            var videos = xtag.toArray(xVideo.querySelectorAll('x-video > video'));
             var tracksLength = 0;
 
             videos.forEach(function (video, currentIndex) {
-                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc || video.src, video.getAttribute('label'));
+                xVideo.xtag.mediaControls.appendChild(video); // Move video element.
+
+                playlist[currentIndex] = videoSrcElement(video.getAttribute('id'), video.currentSrc || video.src, video, video.getAttribute('label'));
 
                 var videoTracks = xtag.toArray(video.querySelectorAll('track'));
                 if (videoTracks.length) {
@@ -282,99 +305,102 @@
                     tracksLength += videoTracks.length;
                 }
 
-                xVideo.removeChild(video);
-            });
-
-            if (videos[0]) {
-                // Copy HTML attributes of the first <video> tag on <x-video> tag.
-                VIDEO_ATTRIBUTES.forEach(function (attribute) {
-                    if (videos[0].hasAttribute(attribute)) {
-                        attributes[attribute] = videos[0].getAttribute(attribute);
-                    }
+                // Propagate events of inner video element to x-video element.
+                VIDEO_EVENT_TYPES.forEach(function (eventType) {
+                    video.addEventListener(eventType, function (event) {
+                        xtag.fireEvent(xVideo, eventType);
+                    }, false);
                 });
-                if (videos[0].hasAttribute('controls')) {
-                    xVideo.setAttribute('controls', '');
-                }
+            });
+            /*if (videos[0]) {
+            // Copy HTML attributes of the first <video> tag on <x-video> tag.
+            VIDEO_ATTRIBUTES.forEach(function(attribute) {
+            if (videos[0].hasAttribute(attribute)) {
+            attributes[attribute] = videos[0].getAttribute(attribute);
             }
+            });
+            if (videos[0].hasAttribute('controls')) {
+            xVideo.setAttribute('controls', '');
+            }
+            }*/
         }
 
         // Keep a list of all HTML attributes on <x-video> tag to replicate to inner <video> tag.
         // The attributes present on the first video element will be overriden here.
-        VIDEO_ATTRIBUTES.forEach(function (attribute) {
-            if (xVideo.hasAttribute(attribute)) {
-                attributes[attribute] = xVideo.getAttribute(attribute);
-            }
-        });
-
-        // Create the inner video element.
-        var innerVideo = document.createElement('video');
-        xVideo.xtag.video = innerVideo;
-
-        for (var attr in attributes) {
-            xVideo.setAttribute(attr, attributes[attr]);
-            innerVideo.setAttribute(attr, attributes[attr]);
+        /*VIDEO_ATTRIBUTES.forEach(function(attribute) {
+        if (xVideo.hasAttribute(attribute)) {
+        attributes[attribute] = xVideo.getAttribute(attribute);
         }
-
-        // Propagate events of inner video element to x-video element.
-        VIDEO_EVENT_TYPES.forEach(function (eventType) {
-            innerVideo.addEventListener(eventType, function (event) {
-                xtag.fireEvent(xVideo, eventType);
-            }, false);
-        });
-
-        if (playlist[0] && playlist[0].src !== null) {
-            innerVideo.src = playlist[0].src;
-        }
-
-        sources.forEach(function (source) {
-            innerVideo.appendChild(source);
-        });
-
+        });*/
+        // We replicate the attribute on both <x-video> and the inner video elements.
+        /*for (var attr in attributes) {
+        xVideo.setAttribute(attr, attributes[attr]);
+        innerVideo.setAttribute(attr, attributes[attr]);
+        }*/
         // When a track is loading, we find the chapter cues.
-        function updateChapterCues(event) {
-            var target = event.currentTarget;
-
-            if (!innerVideo.textTracks) {
-                return;
+        /*function updateChapterCues(event) {
+        var target = event.currentTarget;
+        var innerVideo = target.parentNode;
+        
+        if (!innerVideo.textTracks) {
+        return;
+        }
+        
+        playlist.forEach(function(obj) {
+        obj.trackRange.some(function(trackIndex) {
+        var textTrack = innerVideo.textTracks[trackIndex];
+        if (textTrack.kind === 'chapters' &&
+        (textTrack.mode === 'hidden' || textTrack.mode === 'showing')) {
+        obj.chapterCues = xtag.toArray(textTrack.cues);
+        
+        xVideo.xtag.rewindButton.removeAttribute('hidden');
+        xVideo.xtag.forwardButton.removeAttribute('hidden');
+        
+        return true;
+        }
+        return false;
+        });
+        
+        // Then, remove the event listener.
+        if (target.tagName === 'TRACK') {
+        target.removeEventListener('load', updateChapterCues);
+        }
+        });
+        }*/
+        videos.forEach(function (video, index) {
+            if (index > 0) {
+                // Hidding all the videos, except the first one.
+                video.setAttribute('hidden', '');
             }
 
-            playlist.forEach(function (obj) {
-                obj.trackRange.some(function (trackIndex) {
-                    var textTrack = innerVideo.textTracks[trackIndex];
-                    if (textTrack.kind === 'chapters' && (textTrack.mode === 'hidden' || textTrack.mode === 'showing')) {
-                        obj.chapterCues = xtag.toArray(textTrack.cues);
+            // Detect the support of textTracks.
+            if ('textTracks' in video) {
+                var tracks = xtag.toArray(video.querySelectorAll('track'));
+                tracks.forEach(function (track) {
+                    var updateChapterCues = function (event) {
+                        if (!video.textTracks) {
+                            return;
+                        }
 
-                        xVideo.xtag.rewindButton.removeAttribute('hidden');
-                        xVideo.xtag.forwardButton.removeAttribute('hidden');
+                        playlist[index].chapterCues = xtag.toArray(video.textTracks[0].cues);
+                    };
 
-                        return true;
-                    }
-                    return false;
+                    track.addEventListener('load', updateChapterCues);
                 });
-
-                // Then, remove the event listener.
-                if (target.tagName === 'TRACK') {
-                    target.removeEventListener('load', updateChapterCues);
-                }
-            });
-        }
-
-        tracks.forEach(function (track) {
-            track.addEventListener('load', updateChapterCues);
-
-            // Unfortunately, Firefox 28 doesn't fire events on track elements, so we still need this:
-            innerVideo.addEventListener('durationchange', updateChapterCues);
-
-            innerVideo.appendChild(track);
+            } else {
+                // @todo Fallback for non supporting browsers.
+            }
         });
 
         menus.forEach(function (menu) {
-            if (!menu.hasAttribute('for')) {
+            var forId = menu.getAttribute('for');
+            var forElement = document.getElementById(forId);
+            if (!forId || !forElement) {
                 // Global menu.
                 xVideo.menus.push(menu);
             } else {
                 // Local menu.
-                var targetId = menu.getAttribute('for');
+                var targetId = forId;
                 var targetIndex = null;
                 playlist.some(function (video, index) {
                     if (video.id === targetId) {
@@ -394,9 +420,6 @@
             }
         });
 
-        xVideo.xtag.mediaControls.appendChild(innerVideo);
-
-        //xVideo.xtag.mediaControls.insertBefore(xVideo.xtag.video, xVideo.xtag.mediaControlsEnclosure);
         xVideo.playlist = playlist;
     }
 
@@ -405,21 +428,50 @@
     *
     * @param {string} id
     * @param {string} src
+    * @param {HTMLVideoElement} video
     * @param {string} label
     * @returns {Object}
     */
-    function videoSrcElement(id, src, label) {
+    function videoSrcElement(id, src, video, label) {
         if (typeof id === "undefined") { id = null; }
         if (typeof src === "undefined") { src = null; }
+        if (typeof video === "undefined") { video = null; }
         if (typeof label === "undefined") { label = null; }
         return {
             id: id,
             src: src,
+            video: video,
             label: label,
             trackRange: [],
             chapterCues: [],
             menus: []
         };
+    }
+
+    function updateEventListeners(oldVideo, newVideo, evt) {
+        if (oldVideo) {
+            oldVideo.pause();
+            oldVideo.setAttribute('hidden', '');
+        }
+        if (newVideo) {
+            newVideo.removeAttribute('hidden');
+        }
+
+        [
+            'play',
+            'pause',
+            'durationchange',
+            'timeupdate',
+            'volumechange',
+            'ended'
+        ].forEach(function (eventType) {
+            if (oldVideo) {
+                oldVideo.removeEventListener(eventType, evt);
+            }
+            if (newVideo) {
+                newVideo.addEventListener(eventType, evt);
+            }
+        });
     }
 
     xtag.register('x-video', {
@@ -463,64 +515,80 @@
                 init(xVideo);
 
                 // Listen to the inner video events to maintain the interface in sync with the video state.
-                xtag.addEvents(this.xtag.video, {
-                    'play': function (event) {
-                        xtag.addClass(xVideo.xtag.playButton, 'paused');
-                    },
-                    'pause': function (event) {
-                        xtag.removeClass(xVideo.xtag.playButton, 'paused');
-                    },
-                    'durationchange': function (event) {
-                        xVideo.xtag.timeline.setAttribute('max', xVideo.xtag.video.duration);
-                    },
-                    'timeupdate': function (event) {
-                        xVideo.xtag.timeline.value = this.currentTime;
-                        xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(this.currentTime);
-                    },
-                    'volumechange': function (event) {
-                        if (xVideo.xtag.video.muted) {
-                            xtag.addClass(xVideo.xtag.muteButton, 'muted');
-                        } else {
-                            xtag.removeClass(xVideo.xtag.muteButton, 'muted');
-                        }
-                        xVideo.xtag.volumeSlider.value = xVideo.xtag.video.volume;
-                    },
-                    'ended': function (event) {
-                        // At the end of the video, update the src to the next in the playlist, if any.
-                        if (xVideo.playlist.length > 1 && xVideo.videoIndex < xVideo.playlist.length - 1) {
-                            xVideo.videoIndex++;
+                xVideo.xtag.evt = {};
+                xVideo.xtag.evt.handleEvent = function (event) {
+                    var target = event.target;
 
-                            // Update the src attribute.
-                            xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+                    switch (event.type) {
+                        case 'play':
+                            xtag.addClass(xVideo.xtag.playButton, 'paused');
+                            break;
 
-                            xtag.fireEvent(xVideo, 'videochange');
-                        }
+                        case 'pause':
+                            xtag.removeClass(xVideo.xtag.playButton, 'paused');
+                            break;
+
+                        case 'durationchange':
+                            xVideo.xtag.timeline.setAttribute('max', target.duration);
+                            break;
+
+                        case 'timeupdate':
+                            xVideo.xtag.timeline.value = target.currentTime;
+                            xVideo.xtag.currentTimeDisplay.textContent = formatTimeDisplay(target.currentTime);
+
+                            // Fix for Firefox not always firing durationchange event if the
+                            // video appears multiple times on a page.
+                            xVideo.xtag.timeline.setAttribute('max', target.duration);
+                            break;
+
+                        case 'volumechange':
+                            if (target.muted) {
+                                xtag.addClass(xVideo.xtag.muteButton, 'muted');
+                            } else {
+                                xtag.removeClass(xVideo.xtag.muteButton, 'muted');
+                            }
+                            xVideo.xtag.volumeSlider.value = target.volume;
+                            break;
+
+                        case 'ended':
+                            // At the end of the video, update the src to the next in the playlist, if any.
+                            if (xVideo.playlist.length > 1 && xVideo.videoIndex < xVideo.playlist.length - 1) {
+                                updateEventListeners(xVideo.playlist[xVideo.videoIndex].video, xVideo.playlist[++xVideo.videoIndex].video, xVideo.xtag.evt);
+
+                                // Update the src attribute.
+                                //xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+                                xtag.fireEvent(xVideo, 'videochange');
+                            }
+                            break;
                     }
-                });
+                };
+                updateEventListeners(null, xVideo.playlist[xVideo.videoIndex].video, xVideo.xtag.evt);
 
                 // Show the media controls bar if the controls attribute is present.
                 this.controls = this.hasAttribute('controls');
 
-                // Check if the inner video controls attribute changes.
-                var observer = new MutationObserver(function (mutations) {
-                    mutations.forEach(function (mutation) {
-                        switch (mutation.attributeName) {
-                            case 'controls':
-                                if (xVideo.hasAttribute('controls')) {
-                                    setTimeout(function () {
-                                        xVideo.removeAttribute('controls');
-                                    }, 10);
-                                } else {
-                                    setTimeout(function () {
-                                        xVideo.setAttribute('controls', 'true');
-                                    }, 10);
-                                }
-                                xVideo.xtag.video.removeAttribute('controls');
-                                break;
-                        }
+                // Check if the inner video controls attribute changes on any of the videos.
+                xVideo.playlist.forEach(function (videoSrcElement) {
+                    var observer = new MutationObserver(function (mutations) {
+                        mutations.forEach(function (mutation) {
+                            switch (mutation.attributeName) {
+                                case 'controls':
+                                    if (xVideo.hasAttribute('controls')) {
+                                        setTimeout(function () {
+                                            xVideo.removeAttribute('controls');
+                                        }, 10);
+                                    } else {
+                                        setTimeout(function () {
+                                            xVideo.setAttribute('controls', 'true');
+                                        }, 10);
+                                    }
+                                    videoSrcElement.video.removeAttribute('controls');
+                                    break;
+                            }
+                        });
                     });
+                    observer.observe(videoSrcElement.video, { attributes: true, attributeFilter: ['controls'] });
                 });
-                observer.observe(xVideo.xtag.video, { attributes: true, attributeFilter: ['controls'] });
 
                 // Reset the visual state of the timeline.
                 xVideo.xtag.timeline.value = 0;
@@ -620,9 +688,13 @@
 
                 if (VIDEO_ATTRIBUTES.indexOf(attribute) > -1) {
                     if (this.hasAttribute(attribute)) {
-                        this.xtag.video.setAttribute(attribute, newValue);
+                        this.playlist.forEach(function (videoSrcElement) {
+                            videoSrcElement.video.setAttribute(attribute, newValue);
+                        });
                     } else {
-                        this.xtag.video.removeAttribute(attribute);
+                        this.playlist.forEach(function (videoSrcElement) {
+                            videoSrcElement.video.removeAttribute(attribute);
+                        });
                     }
                 }
             }
@@ -630,18 +702,18 @@
         events: {
             'click:delegate(.media-controls-play-button)': function (event) {
                 var xVideo = event.currentTarget;
-                if (xVideo.xtag.video.paused) {
-                    xVideo.xtag.video.play();
+                if (xVideo.playlist[xVideo.videoIndex].video.paused) {
+                    xVideo.playlist[xVideo.videoIndex].video.play();
                 } else {
-                    xVideo.xtag.video.pause();
+                    xVideo.playlist[xVideo.videoIndex].video.pause();
                 }
             },
             'click:delegate(input.media-controls-rewind-button)': function (event) {
                 var xVideo = event.currentTarget;
-                var currentTime = xVideo.xtag.video.currentTime;
+                var currentTime = xVideo.playlist[xVideo.videoIndex].video.currentTime;
                 var currentChapter = null;
 
-                if (!xVideo.xtag.video.paused) {
+                if (!xVideo.playlist[xVideo.videoIndex].video.paused) {
                     // If the video is playing, we substract 1 second to be able to jump to previous
                     // chapter. Otherwise, it would jump at the beginning of the current one.
                     currentTime = Math.max(0, currentTime - 1.000);
@@ -649,9 +721,9 @@
 
                 if (currentTime === 0 && xVideo.playlist.length > 1 && xVideo.videoIndex > 0) {
                     // We play the previous video in the playlist.
-                    xVideo.videoIndex--;
-                    xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
+                    updateEventListeners(xVideo.playlist[xVideo.videoIndex].video, xVideo.playlist[--xVideo.videoIndex].video, xVideo.xtag.evt);
 
+                    //xVideo.src = xVideo.playlist[xVideo.videoIndex].src;
                     //xVideo.textTracks = xVideo.playlist[xVideo.videoIndex].textTracks;
                     xVideo.play();
 
@@ -758,13 +830,13 @@
             'click:delegate(.media-controls-menu-button)': function (event) {
                 var xVideo = event.currentTarget;
 
-                xVideo.pause();
-
                 if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
                     // Does this video have a local menu?
+                    xVideo.pause();
                     xVideo.playlist[xVideo.videoIndex].menus[0].show();
                 } else if (xVideo.menus[0]) {
                     // Otherwise, we show the global menu.
+                    xVideo.pause();
                     xVideo.menus[0].show();
                 }
             },
@@ -782,127 +854,127 @@
             // Read only attributes.
             videoWidth: {
                 get: function () {
-                    return this.xtag.video.videoWidth;
+                    return this.playlist[this.videoIndex].video.videoWidth;
                 }
             },
             videoHeight: {
                 get: function () {
-                    return this.xtag.video.videoHeight;
+                    return this.playlist[this.videoIndex].video.videoHeight;
                 }
             },
             buffered: {
                 get: function () {
-                    return this.xtag.video.buffered;
+                    return this.playlist[this.videoIndex].video.buffered;
                 }
             },
             currentSrc: {
                 get: function () {
-                    return this.xtag.video.currentSrc;
+                    return this.playlist[this.videoIndex].video.currentSrc;
                 }
             },
             duration: {
                 get: function () {
-                    return this.xtag.video.duration;
+                    return this.playlist[this.videoIndex].video.duration;
                 }
             },
             ended: {
                 get: function () {
-                    return this.xtag.video.ended;
+                    return this.playlist[this.videoIndex].video.ended;
                 }
             },
             error: {
                 get: function () {
-                    return this.xtag.video.error;
+                    return this.playlist[this.videoIndex].video.error;
                 }
             },
             initialTime: {
                 get: function () {
-                    return this.xtag.video.initialTime;
+                    return this.playlist[this.videoIndex].video.initialTime;
                 }
             },
             paused: {
                 get: function () {
-                    return this.xtag.video.paused;
+                    return this.playlist[this.videoIndex].video.paused;
                 }
             },
             played: {
                 get: function () {
-                    return this.xtag.video.played;
+                    return this.playlist[this.videoIndex].video.played;
                 }
             },
             readyState: {
                 get: function () {
-                    return this.xtag.video.readyState;
+                    return this.playlist[this.videoIndex].video.readyState;
                 }
             },
             seekable: {
                 get: function () {
-                    return this.xtag.video.seekable;
+                    return this.playlist[this.videoIndex].video.seekable;
                 }
             },
             seeking: {
                 get: function () {
-                    return this.xtag.video.seeking;
+                    return this.playlist[this.videoIndex].video.seeking;
                 }
             },
             // @todo Check support for this attribute before adding to accessors.
             mozChannels: {
                 get: function () {
-                    return this.xtag.video.mozChannels;
+                    return this.playlist[this.videoIndex].video.mozChannels;
                 }
             },
             mozSampleRate: {
                 get: function () {
-                    return this.xtag.video.mozSampleRate;
+                    return this.playlist[this.videoIndex].video.mozSampleRate;
                 }
             },
             // Get/Set attributes.
             width: {
                 get: function () {
-                    return this.xtag.video.width;
+                    return this.playlist[this.videoIndex].video.width;
                 },
                 set: function (value) {
-                    this.xtag.video.width = value;
+                    this.playlist[this.videoIndex].video.width = value;
                 }
             },
             height: {
                 get: function () {
-                    return this.xtag.video.height;
+                    return this.playlist[this.videoIndex].video.height;
                 },
                 set: function (value) {
-                    this.xtag.video.height = value;
+                    this.playlist[this.videoIndex].video.height = value;
                 }
             },
             poster: {
                 get: function () {
-                    return this.xtag.video.poster;
+                    return this.playlist[this.videoIndex].video.poster;
                 },
                 set: function (value) {
-                    this.xtag.video.poster = value;
+                    this.playlist[this.videoIndex].video.poster = value;
                 }
             },
             audioTracks: {
                 get: function () {
-                    return this.xtag.video.audioTracks;
+                    return this.playlist[this.videoIndex].video.audioTracks;
                 },
                 set: function (value) {
-                    this.xtag.video.audioTracks = value;
+                    this.playlist[this.videoIndex].video.audioTracks = value;
                 }
             },
             autoplay: {
                 get: function () {
-                    return this.xtag.video.autoplay;
+                    return this.playlist[this.videoIndex].video.autoplay;
                 },
                 set: function (value) {
-                    this.xtag.video.autoplay = value;
+                    this.playlist[this.videoIndex].video.autoplay = value;
                 }
             },
             controller: {
                 get: function () {
-                    return this.xtag.video.controller;
+                    return this.playlist[this.videoIndex].video.controller;
                 },
                 set: function (value) {
-                    this.xtag.video.controller = value;
+                    this.playlist[this.videoIndex].video.controller = value;
                 }
             },
             controls: {
@@ -922,170 +994,170 @@
             },
             crossOrigin: {
                 get: function () {
-                    return this.xtag.video.crossOrigin;
+                    return this.playlist[this.videoIndex].video.crossOrigin;
                 },
                 set: function (value) {
-                    this.xtag.video.crossOrigin = value;
+                    this.playlist[this.videoIndex].video.crossOrigin = value;
                 }
             },
             currentTime: {
                 get: function () {
-                    return this.xtag.video.currentTime;
+                    return this.playlist[this.videoIndex].video.currentTime;
                 },
                 set: function (value) {
-                    this.xtag.video.currentTime = value;
+                    this.playlist[this.videoIndex].video.currentTime = value;
                 }
             },
             defaultMuted: {
                 get: function () {
-                    return this.xtag.video.defaultMuted;
+                    return this.playlist[this.videoIndex].video.defaultMuted;
                 },
                 set: function (value) {
-                    this.xtag.video.defaultMuted = value;
+                    this.playlist[this.videoIndex].video.defaultMuted = value;
                 }
             },
             defaultPlaybackRate: {
                 get: function () {
-                    return this.xtag.video.defaultPlaybackRate;
+                    return this.playlist[this.videoIndex].video.defaultPlaybackRate;
                 },
                 set: function (value) {
-                    this.xtag.video.defaultPlaybackRate = value;
+                    this.playlist[this.videoIndex].video.defaultPlaybackRate = value;
                 }
             },
             loop: {
                 get: function () {
-                    return this.xtag.video.loop;
+                    return this.playlist[this.videoIndex].video.loop;
                 },
                 set: function (value) {
-                    this.xtag.video.loop = value;
+                    this.playlist[this.videoIndex].video.loop = value;
                 }
             },
             mediaGroup: {
                 get: function () {
-                    return this.xtag.video.mediaGroup;
+                    return this.playlist[this.videoIndex].video.mediaGroup;
                 },
                 set: function (value) {
-                    this.xtag.video.mediaGroup = value;
+                    this.playlist[this.videoIndex].video.mediaGroup = value;
                 }
             },
             muted: {
                 get: function () {
-                    return this.xtag.video.muted;
+                    return this.playlist[this.videoIndex].video.muted;
                 },
                 set: function (value) {
-                    this.xtag.video.muted = value;
+                    this.playlist[this.videoIndex].video.muted = value;
                 }
             },
             networkState: {
                 get: function () {
-                    return this.xtag.video.networkState;
+                    return this.playlist[this.videoIndex].video.networkState;
                 }
             },
             playbackRate: {
                 get: function () {
-                    return this.xtag.video.playbackRate;
+                    return this.playlist[this.videoIndex].video.playbackRate;
                 },
                 set: function (value) {
-                    this.xtag.video.playbackRate = value;
+                    this.playlist[this.videoIndex].video.playbackRate = value;
                 }
             },
             preload: {
                 get: function () {
-                    return this.xtag.video.preload;
+                    return this.playlist[this.videoIndex].video.preload;
                 },
                 set: function (value) {
-                    this.xtag.video.preload = value;
+                    this.playlist[this.videoIndex].video.preload = value;
                 }
             },
             src: {
                 get: function () {
-                    return this.xtag.video.src;
+                    return this.playlist[this.videoIndex].video.src;
                 },
                 set: function (value) {
                     if (this.playlist[this.videoIndex]) {
                         this.playlist[this.videoIndex].src = value;
                     }
-                    this.xtag.video.src = value;
+                    this.playlist[this.videoIndex].video.src = value;
                 }
             },
             textTracks: {
                 get: function () {
-                    return this.xtag.video.textTracks;
+                    return this.playlist[this.videoIndex].video.textTracks;
                 },
                 set: function (value) {
-                    this.xtag.video.textTracks = value;
+                    this.playlist[this.videoIndex].video.textTracks = value;
                 }
             },
             videoTracks: {
                 get: function () {
-                    return this.xtag.video.videoTracks;
+                    return this.playlist[this.videoIndex].video.videoTracks;
                 },
                 set: function (value) {
-                    this.xtag.video.videoTracks = value;
+                    this.playlist[this.videoIndex].video.videoTracks = value;
                 }
             },
             volume: {
                 get: function () {
-                    return this.xtag.video.volume;
+                    return this.playlist[this.videoIndex].video.volume;
                 },
                 set: function (value) {
-                    this.xtag.video.volume = value;
+                    this.playlist[this.videoIndex].video.volume = value;
                 }
             },
             // Extra feature methods
-            onchapterchange: {
-                get: function () {
-                    return this.xtag.onchapterchangeListener;
-                },
-                set: function (event) {
-                    // @todo Remove event listener for this.xtag.onchapterchangeListener if previously set.
-                    this.xtag.onchapterchangeListener = event;
-                    this.addEventListener('chapterchange', event, false);
-                }
+            /*onchapterchange: {
+            get: function() {
+            return this.xtag.onchapterchangeListener;
             },
+            set: function(event) {
+            // @todo Remove event listener for this.xtag.onchapterchangeListener if previously set.
+            this.xtag.onchapterchangeListener = event;
+            this.addEventListener('chapterchange', event, false);
+            }
+            },*/
             // @todo Check support for this attribute before adding to accessors.
             mozFrameBufferLength: {
                 get: function () {
-                    return this.xtag.video.mozFrameBufferLength;
+                    return this.playlist[this.videoIndex].video.mozFrameBufferLength;
                 },
                 set: function (value) {
-                    this.xtag.video.mozFrameBufferLength = value;
+                    this.playlist[this.videoIndex].video.mozFrameBufferLength = value;
                 }
             },
             // @todo Check support for this attribute before adding to accessors.
             mozSrcObject: {
                 get: function () {
-                    return this.xtag.video.mozSrcObject;
+                    return this.playlist[this.videoIndex].video.mozSrcObject;
                 },
                 set: function (value) {
-                    this.xtag.video.mozSrcObject = value;
+                    this.playlist[this.videoIndex].video.mozSrcObject = value;
                 }
             }
         },
         methods: {
             canPlayType: function (type) {
-                return this.xtag.video.canPlayType(type);
+                return this.playlist[this.videoIndex].video.canPlayType(type);
             },
             /*fastSeek: function(time) {
-            return this.xtag.video.fastSeek(time);
+            return this.playlist[this.videoIndex].video.fastSeek(time);
             },*/
             load: function () {
-                return this.xtag.video.load();
+                return this.playlist[this.videoIndex].video.load();
             },
             pause: function () {
-                return this.xtag.video.pause();
+                return this.playlist[this.videoIndex].video.pause();
             },
             play: function () {
-                return this.xtag.video.play();
+                return this.playlist[this.videoIndex].video.play();
             },
             addTextTrack: function (kind, label, language) {
                 if (typeof label === "undefined") { label = undefined; }
                 if (typeof language === "undefined") { language = undefined; }
-                return this.xtag.video.addTextTrack(kind, label, language);
+                return this.playlist[this.videoIndex].video.addTextTrack(kind, label, language);
             },
             // @todo Check support for this attribute before adding to methods.
             mozGetMetadata: function () {
-                return this.xtag.video.mozGetMetadata();
+                return this.playlist[this.videoIndex].video.mozGetMetadata();
             },
             // New methods.
             /**
@@ -1103,6 +1175,7 @@
                     return;
                 }
 
+                updateEventListeners(this.playlist[this.videoIndex].video, this.playlist[videoIndex].video, this.xtag.evt);
                 this.videoIndex = videoIndex;
                 this.src = this.playlist[videoIndex].src;
                 this.play();

@@ -1203,11 +1203,11 @@
 })();
 
 ///<reference path='declarations/xtag.d.ts'/>
-/** @const */ var MENU_MODES;
-(function (MENU_MODES) {
-    MENU_MODES[MENU_MODES["GLOBAL"] = 0] = "GLOBAL";
-    MENU_MODES[MENU_MODES["LOCAL"] = 1] = "LOCAL";
-})(MENU_MODES || (MENU_MODES = {}));
+/** @const */ var MENU_MODE;
+(function (MENU_MODE) {
+    MENU_MODE[MENU_MODE["GLOBAL"] = 0] = "GLOBAL";
+    MENU_MODE[MENU_MODE["LOCAL"] = 1] = "LOCAL";
+})(MENU_MODE || (MENU_MODE = {}));
 
 (function () {
     'use strict';
@@ -1242,8 +1242,8 @@
             }
         }
 
-        xtag.addEvent(document, 'keydown:keypass(13,27)', function (event) {
-            console.log('Esc', xMenu);
+        // Dismiss the menu when pressing the `Esc` key.
+        xtag.addEvent(document, 'keyup:keypass(27)', function (event) {
             xMenu.hide();
         });
 

@@ -40,6 +40,11 @@
       }
     }
 
+    // Dismiss the menu when pressing the `Esc` key.
+    xtag.addEvent(document, 'keyup:keypass(27)', function(event) {
+      xMenu.hide();
+    });
+
     xMenu.xtag.initialized = true;
   }
 

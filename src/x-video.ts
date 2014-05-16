@@ -1231,7 +1231,7 @@
       },
 
       /**
-       * Play the video specified by it ID attribute.
+       * Play the video specified by its ID attribute.
        *
        * @param {string} elementID
        */
@@ -1284,22 +1284,29 @@
       },
 
       /**
-       * Open the specified menu.
+       * Play the menu specified by its ID attribute.
        *
-       * @param {number} chapterIndex
+       * @param {string} elementID
        */
-      playMenu: function(chapterIndex: number) {
-        if (typeof chapterIndex !== 'number') {
-          console.error('Invalid chapter number');
+      playMenuByID: function(elementID: string) {
+        if (elementID === undefined) {
+          console.error('Missing element ID');
           return;
         }
-        if (chapterIndex < 0 || chapterIndex >= this.playlist[this.videoIndex].chapterCues.length) {
-          console.error('Chapter requested out of bound');
+        if (typeof elementID !== 'string') {
+          elementID = String(elementID);
+        }
+
+        var menu = this.querySelector(elementID);
+
+        if (!menu) {
+          console.error('Unknown element ID');
           return;
         }
 
-        this.currentTime = this.playlist[this.videoIndex].chapterCues[chapterIndex].startTime;
-        this.play();
+        this.pause();
+        // @todo Hide all open menus.
+        menu.show();
       }
     }
   });

@@ -1181,11 +1181,62 @@
                 this.play();
             },
             /**
+            * Play the video specified by it ID attribute.
+            *
+            * @param {string} elementID
+            */
+            playByID: function (elementID) {
+                if (elementID === undefined) {
+                    console.error('Missing element ID');
+                    return;
+                }
+                if (typeof elementID !== 'string') {
+                    elementID = String(elementID);
+                }
+
+                var targetElementIndex = null;
+                this.playlist.some(function (videoSrcElement, index) {
+                    if (videoSrcElement.id === elementID) {
+                        targetElementIndex = index;
+                        return true;
+                    }
+                    return false;
+                });
+
+                if (targetElementIndex === null) {
+                    console.error('Unknown element ID');
+                    return;
+                }
+
+                updateEventListeners(this.playlist[this.videoIndex].video, this.playlist[targetElementIndex].video, this.xtag.evt);
+                this.videoIndex = targetElementIndex;
+                this.src = this.playlist[targetElementIndex].src;
+                this.play();
+            },
+            /**
             * Play the specified chapter in the current video on the playlist.
             *
             * @param {number} chapterIndex
             */
             playChapter: function (chapterIndex) {
+                if (typeof chapterIndex !== 'number') {
+                    console.error('Invalid chapter number');
+                    return;
+                }
+                if (chapterIndex < 0 || chapterIndex >= this.playlist[this.videoIndex].chapterCues.length) {
+                    console.error('Chapter requested out of bound');
+                    return;
+                }
+
+                this.currentTime = this.playlist[this.videoIndex].chapterCues[chapterIndex].startTime;
+                this.play();
+            },
+            /**
+            * Open the specified menu.
+            *
+            * @param {number} chapterIndex
+            */
+            playMenu: function (chapterIndex) {
                 if (typeof chapterIndex !== 'number') {
                     console.error('Invalid chapter number');
                     return;

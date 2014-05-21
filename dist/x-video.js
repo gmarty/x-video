@@ -1257,7 +1257,7 @@
                     elementID = String(elementID);
                 }
 
-                var menu = this.querySelector(elementID);
+                var menu = this.querySelector('#' + elementID);
 
                 if (!menu) {
                     console.error('Unknown element ID');

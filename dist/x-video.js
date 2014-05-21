@@ -474,11 +474,15 @@
         });
     }
 
+    /**
+    * Hide all menu of the passed x-video object.
+    * @param {Object} xVideo
+    */
     function hideAllMenu(xVideo) {
         var menus = xVideo.querySelectorAll('x-menu');
-        for (var i = 0; i <= menus.length; i++) {
+        for (var i = 0; i < menus.length; i++) {
             var menu = menus[i];
-            menu[i].hide();
+            menu.hide();
         }
     }
 
@@ -1185,7 +1189,6 @@
 
                 updateEventListeners(this.playlist[this.videoIndex].video, this.playlist[videoIndex].video, this.xtag.evt);
                 this.videoIndex = videoIndex;
-                this.src = this.playlist[videoIndex].src;
                 hideAllMenu(this);
                 this.play();
             },
@@ -1219,7 +1222,6 @@
 
                 updateEventListeners(this.playlist[this.videoIndex].video, this.playlist[targetElementIndex].video, this.xtag.evt);
                 this.videoIndex = targetElementIndex;
-                this.src = this.playlist[targetElementIndex].src;
                 hideAllMenu(this);
                 this.play();
             },

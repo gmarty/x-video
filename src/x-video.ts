@@ -1238,7 +1238,6 @@
 
         updateEventListeners(this.playlist[this.videoIndex].video, this.playlist[videoIndex].video, this.xtag.evt);
         this.videoIndex = videoIndex;
-        this.src = this.playlist[videoIndex].src;
         hideAllMenu(this);
         this.play();
       },
@@ -1273,7 +1272,6 @@
 
         updateEventListeners(this.playlist[this.videoIndex].video, this.playlist[targetElementIndex].video, this.xtag.evt);
         this.videoIndex = targetElementIndex;
-        this.src = this.playlist[targetElementIndex].src;
         hideAllMenu(this);
         this.play();
       },

@@ -523,6 +523,9 @@
                 // Hold the list
                 this.menus = [];
 
+                // An optional function to call when the menu button is clicked.
+                xVideo.xtag.onMenuHandler = null;
+
                 // Initialize the DOM elements.
                 init(xVideo);
 
@@ -842,7 +845,12 @@
             'click:delegate(.media-controls-menu-button)': function (event) {
                 var xVideo = event.currentTarget;
 
-                if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
+                hideAllMenu(xVideo);
+
+                if (xVideo.xtag.onMenuHandler) {
+                    xVideo.pause();
+                    xVideo.xtag.onMenuHandler(event);
+                } else if (xVideo.playlist[xVideo.videoIndex].menus[0]) {
                     // Does this video have a local menu?
                     xVideo.pause();
                     xVideo.playlist[xVideo.videoIndex].menus[0].show();
@@ -1127,6 +1135,18 @@
             this.addEventListener('chapterchange', event, false);
             }
             },*/
+            onmenu: {
+                get: function () {
+                    return this.xtag.onMenuHandler;
+                },
+                set: function (value) {
+                    if (typeof value !== 'function') {
+                        console.error('Provided param is not a function');
+                        return;
+                    }
+                    this.xtag.onMenuHandler = value;
+                }
+            },
             // @todo Check support for this attribute before adding to accessors.
             mozFrameBufferLength: {
                 get: function () {

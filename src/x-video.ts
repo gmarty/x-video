@@ -418,11 +418,11 @@
 
       function updateChapterCues(event) {
         if (!video.textTracks || !video.textTracks[0] ||
-          playlist[index].chapterCues.length) {
+          playlist[index].chapterCues.length > 0) {
           return;
         }
 
-        playlist[index].chapterCues = xtag.toArray(video.textTracks[0].cues);
+        playlist[index].chapterCues = video.textTracks[0].cues;
       }
 
       // Detect the support of textTracks.

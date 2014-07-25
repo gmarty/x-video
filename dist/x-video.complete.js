@@ -373,19 +373,27 @@
                 video.setAttribute('hidden', '');
             }
 
+            function updateChapterCues(event) {
+                if (!video.textTracks || !video.textTracks[0] || playlist[index].chapterCues.length) {
+                    return;
+                }
+
+                playlist[index].chapterCues = xtag.toArray(video.textTracks[0].cues);
+            }
+
             // Detect the support of textTracks.
             if ('textTracks' in video) {
                 var tracks = xtag.toArray(video.querySelectorAll('track'));
                 tracks.forEach(function (track) {
-                    var updateChapterCues = function (event) {
-                        if (!video.textTracks) {
-                            return;
-                        }
+                    if (track.track.cues && track.track.cues.length) {
+                        // The WebVTT file is already loaded and parsed.
+                        playlist[index].chapterCues = xtag.toArray(track.track.cues);
+                    } else {
+                        track.addEventListener('load', updateChapterCues);
 
-                        playlist[index].chapterCues = xtag.toArray(video.textTracks[0].cues);
-                    };
-
-                    track.addEventListener('load', updateChapterCues);
+                        // Unfortunately, Firefox doesn't fire events on track elements.
+                        video.addEventListener('durationchange', updateChapterCues);
+                    }
                 });
             } else {
                 // @todo Fallback for non supporting browsers.

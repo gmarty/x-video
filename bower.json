@@ -24,6 +24,6 @@
     "tests"
   ],
   "dependencies": {
-    "x-tag-core": "~0.9.3"
+    "x-tag-core": "~1.1.9"
   }
 }
